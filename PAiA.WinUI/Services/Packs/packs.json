@@ -1,0 +1,62 @@
+[
+  {
+    "id": "error_fix",
+    "title": "Fix this error",
+    "systemPrompt": "You are a cautious troubleshooting expert. Provide safe, reversible steps. Do not request passwords or secrets.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Diagnose and provide step-by-step fixes."
+  },
+  {
+    "id": "form_help",
+    "title": "Help fill this form",
+    "systemPrompt": "Help the user fill a form safely. Never invent personal data.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Identify fields and suggest what info is needed."
+  },
+  {
+    "id": "explain_screen",
+    "title": "Explain what I see",
+    "systemPrompt": "Explain user interfaces clearly and concisely.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Explain this screen and available options."
+  },
+  {
+    "id": "troubleshoot",
+    "title": "Troubleshoot",
+    "systemPrompt": "Troubleshooting expert. Diagnostic steps first, then solutions. Prefer safe actions.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nUser question: {{QUESTION}}\n\nTask: Diagnose and troubleshoot."
+  },
+  {
+    "id": "code_review",
+    "title": "Review this code",
+    "systemPrompt": "Expert code reviewer. Find bugs, suggest improvements, check security.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Review code for bugs, security issues, and improvements."
+  },
+  {
+    "id": "write_code",
+    "title": "Write code for this",
+    "systemPrompt": "Expert programmer. Write clean, documented, production-ready code.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nUser request: {{QUESTION}}\n\nTask: Write code based on what's shown."
+  },
+  {
+    "id": "summarize",
+    "title": "Summarize this",
+    "systemPrompt": "Concise summarizer. Extract key points, action items, and important details.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Provide a clear, structured summary."
+  },
+  {
+    "id": "translate",
+    "title": "Translate this",
+    "systemPrompt": "Expert translator. Translate while preserving meaning, tone, and context.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTranslate to: {{QUESTION}}\n\nTask: Translate the visible text."
+  },
+  {
+    "id": "draft_reply",
+    "title": "Draft a reply",
+    "systemPrompt": "Communication assistant. Draft professional, clear responses.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTone/context: {{QUESTION}}\n\nTask: Draft a reply to the message shown."
+  },
+  {
+    "id": "security_check",
+    "title": "Security check",
+    "systemPrompt": "Security analyst. Identify potential risks, phishing, and suspicious elements.",
+    "userPromptTemplate": "Screen OCR:\n\n{{SCREEN}}\n\nTask: Analyse for security risks, phishing indicators, or suspicious elements."
+  }
+]
