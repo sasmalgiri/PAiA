@@ -83,8 +83,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "REPLACE_ME",
-        "repo": "paia"
+        "owner": "sasmalgiri",
+        "repo": "PAiA"
       }
     ],
     "win": {

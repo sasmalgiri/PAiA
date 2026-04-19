@@ -1,7 +1,7 @@
 [Unit]
 Description=PAiA license issuance webhook server
 After=network.target
-Documentation=https://github.com/REPLACE_ME/paia/tree/main/paia-electron/server
+Documentation=https://github.com/sasmalgiri/PAiA/tree/main/paia-electron/server
 
 [Service]
 Type=simple

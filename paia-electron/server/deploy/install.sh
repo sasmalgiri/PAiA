@@ -3,7 +3,7 @@
 # PAiA license server — one-shot deploy script for Ubuntu 22.04+ / Debian 12+.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/REPLACE_ME/paia/main/paia-electron/server/deploy/install.sh | sudo bash -s -- license.paia.app
+#   curl -sSL https://raw.githubusercontent.com/sasmalgiri/PAiA/main/paia-electron/server/deploy/install.sh | sudo bash -s -- license.paia.app
 #
 # Or, after cloning the repo:
 #   sudo bash server/deploy/install.sh license.paia.app
