@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+    <title>PAiA — Select Region</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.35);
+        color: #fff;
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        font-size: 13px;
+        cursor: crosshair;
+        user-select: none;
+        overflow: hidden;
+      }
+      #hint {
+        position: fixed;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 6px 14px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 18px;
+        font-weight: 500;
+        pointer-events: none;
+      }
+      #selection {
+        position: fixed;
+        border: 2px solid #6aa6ff;
+        background: rgba(106, 166, 255, 0.12);
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35);
+        pointer-events: none;
+        display: none;
+      }
+      #size {
+        position: fixed;
+        background: #6aa6ff;
+        color: #0a0d14;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 4px;
+        pointer-events: none;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hint">Click and drag to select · Esc to cancel</div>
+    <div id="selection"></div>
+    <div id="size"></div>
+    <script src="region.js"></script>
+  </body>
+</html>

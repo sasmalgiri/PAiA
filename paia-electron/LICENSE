@@ -1,0 +1,170 @@
+PAiA — End User License Agreement (Template)
+─────────────────────────────────────────────
+
+Copyright (c) 2026 [YOUR LEGAL NAME OR COMPANY], all rights reserved.
+
+THIS IS A TEMPLATE. It has not been reviewed by a lawyer. Before
+shipping the installer, get a real lawyer to review and customize it
+for your jurisdiction. The placeholders in [BRACKETS] need to be
+filled in.
+
+────────────────────────────────────────────────────────────────────
+
+1. ACCEPTANCE OF TERMS
+
+By installing or using PAiA ("the Software"), you agree to be bound by
+the terms of this End User License Agreement ("Agreement"). If you do
+not agree, do not install or use the Software.
+
+2. LICENSE GRANT
+
+Subject to the terms of this Agreement and your payment of the
+applicable fees (if any), [LEGAL NAME] grants you a non-exclusive,
+non-transferable, revocable license to install and use the Software:
+
+   (a) FREE TIER: for personal, non-commercial use, on any number of
+       devices you personally own. The free tier does not include the
+       Pro features described in the product's pricing page.
+
+   (b) PRO TIER (subscription): for personal or commercial use during
+       the period covered by your active subscription, on up to one
+       device per active seat purchased.
+
+   (c) LIFETIME TIER: for personal or commercial use, in perpetuity,
+       on up to three devices that you personally own. The Lifetime
+       tier includes all minor updates indefinitely and all major
+       updates released within two years of purchase.
+
+3. RESTRICTIONS
+
+You may not:
+
+   - Reverse engineer, decompile, or disassemble the Software, except
+     to the extent expressly permitted by applicable law.
+   - Rent, lease, sublicense, or distribute the Software to third
+     parties.
+   - Remove or alter copyright, trademark, or other proprietary notices.
+   - Use the Software to build a competing product.
+   - Bypass the licensing or trial mechanisms.
+
+4. LOCAL DATA AND PRIVACY
+
+The Software runs locally on your computer. Your conversations, voice
+recordings, screen captures, and uploaded documents are processed
+entirely on your device and are not transmitted to [LEGAL NAME] or its
+servers.
+
+The Software may make optional outbound network connections to:
+
+   - Your local Ollama daemon (loopback interface only)
+   - Hugging Face CDN, for downloading speech and TTS models on first use
+   - Tesseract OCR data CDN, for downloading language models on first use
+   - GitHub Releases, for auto-update checks (configurable)
+   - DuckDuckGo, only when you explicitly run a web search command
+   - Cloud LLM providers (OpenAI, Anthropic, etc.), only if you opt in
+     and configure your own API key
+
+A current and complete list is available at https://paia.app/privacy.
+
+5. THIRD-PARTY COMPONENTS
+
+The Software incorporates open-source libraries listed in the
+THIRD-PARTY-NOTICES.md file included with the Software. Each
+third-party component is governed by its own license, which is
+preserved alongside the Software.
+
+6. PAYMENT, REFUNDS, AND SUBSCRIPTIONS
+
+   (a) Pro and Lifetime tier purchases are processed by our payment
+       provider, [LemonSqueezy / Stripe], who acts as the merchant of
+       record where applicable.
+
+   (b) Subscription fees are charged in advance for the term selected
+       at checkout (monthly or annually). Subscriptions auto-renew
+       unless cancelled.
+
+   (c) You may cancel a subscription at any time from your customer
+       portal. Cancellation takes effect at the end of the current
+       billing period. No refunds are issued for partial periods.
+
+   (d) For Lifetime purchases, [LEGAL NAME] offers a refund within
+       thirty (30) days of purchase, no questions asked.
+
+   (e) After a refund, the corresponding license becomes invalid for
+       new activations. Existing local installations continue to work
+       until the next time the Software verifies the license.
+
+7. UPDATES
+
+   (a) The Software may include an auto-update feature that checks
+       for and installs new versions. You may disable this feature in
+       Settings → General.
+
+   (b) [LEGAL NAME] may release updates that modify, add, or remove
+       features. Material reductions to the Pro feature set will be
+       announced at least thirty (30) days in advance via the
+       changelog at https://paia.app/changelog.
+
+8. LICENSE TERMINATION
+
+This Agreement terminates automatically if you fail to comply with
+its terms. Upon termination, you must stop using and uninstall the
+Software. Termination does not entitle you to a refund except as
+described in section 6(d).
+
+9. WARRANTY DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
+EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION THE IMPLIED
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NON-INFRINGEMENT. [LEGAL NAME] DOES NOT WARRANT THAT THE SOFTWARE WILL
+BE UNINTERRUPTED, ERROR-FREE, OR FREE OF SECURITY VULNERABILITIES.
+
+10. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL [LEGAL NAME] BE LIABLE FOR ANY INDIRECT,
+INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY
+LOSS OF PROFITS, DATA, OR USE, ARISING OUT OF OR IN CONNECTION WITH
+THE SOFTWARE, REGARDLESS OF THE LEGAL THEORY ON WHICH THE CLAIM IS
+BASED. [LEGAL NAME]'S TOTAL LIABILITY FOR ANY CLAIM SHALL NOT EXCEED
+THE AMOUNT YOU PAID FOR THE SOFTWARE IN THE TWELVE (12) MONTHS
+PRECEDING THE CLAIM.
+
+11. AI-GENERATED OUTPUT
+
+The Software allows you to interact with large language models. The
+output of these models may be inaccurate, biased, or otherwise
+inappropriate. [LEGAL NAME] makes no warranty as to the accuracy or
+reliability of any AI-generated content. You are solely responsible
+for evaluating and using the output of the Software.
+
+12. COMPLIANCE WITH LAWS
+
+You agree to use the Software in compliance with all applicable laws,
+including export-control and privacy laws in your jurisdiction.
+
+13. GOVERNING LAW
+
+This Agreement is governed by the laws of [JURISDICTION], without
+regard to its conflict-of-law provisions. Any dispute arising under
+this Agreement shall be resolved in the courts of [JURISDICTION].
+
+14. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire agreement between you and
+[LEGAL NAME] regarding the Software and supersedes any prior
+agreements between the parties.
+
+15. CONTACT
+
+Questions about this Agreement should be directed to:
+   [LEGAL NAME]
+   [LEGAL ADDRESS]
+   hello@paia.app
+
+────────────────────────────────────────────────────────────────────
+
+By installing PAiA, you acknowledge that you have read and understood
+this Agreement and agree to be bound by its terms.
+
+Last updated: [DATE]

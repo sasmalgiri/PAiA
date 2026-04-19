@@ -1,0 +1,95 @@
+// Français — traduction partielle ; les clés manquantes retombent sur
+// l'anglais.
+
+import type { DeepPartial } from '../lib/i18n';
+import type { Strings } from './en';
+
+export const fr: DeepPartial<Strings> = {
+  common: {
+    cancel: 'Annuler',
+    save: 'Enregistrer',
+    delete: 'Supprimer',
+    edit: 'Modifier',
+    copy: 'Copier',
+    close: 'Fermer',
+    back: 'Retour',
+    yes: 'Oui',
+    no: 'Non',
+    ok: 'OK',
+    loading: 'Chargement…',
+    error: 'Erreur',
+    retry: 'Réessayer',
+    enable: 'Activer',
+    disable: 'Désactiver',
+    connect: 'Connecter',
+    disconnect: 'Déconnecter',
+  },
+  panel: {
+    title: 'PAiA',
+    close: 'Fermer',
+    settings: 'Paramètres',
+    newThread: 'Nouvelle conversation',
+    captureFullScreen: "Capturer tout l'écran",
+    captureRegion: 'Capturer une région',
+    canvas: 'Toile / artefacts',
+    attachCollection: 'Attacher une collection de connaissances',
+  },
+  composer: {
+    placeholder: "Demandez à PAiA… (/ pour les commandes, glissez ou collez des images)",
+    send: 'Envoyer',
+    attach: 'Joindre des fichiers',
+    micStart: "Commencer l'écoute",
+    micStop: 'Arrêter',
+    hintRedacted: 'PII masquées localement avant envoi.',
+    hintListening: 'À l’écoute… cliquez sur le micro pour arrêter.',
+    hintTranscribing: 'Transcription…',
+  },
+  empty: {
+    howCanIHelp: 'Comment puis-je aider ?',
+    hint: 'Écrivez un message, déposez un fichier, capturez votre écran ou cliquez sur 🎙.',
+  },
+  settings: {
+    title: 'Paramètres',
+    general: {
+      theme: 'Thème',
+      themeSystem: 'Système',
+      themeDark: 'Sombre',
+      themeLight: 'Clair',
+      language: 'Langue',
+      alwaysOnTop: 'Rester au-dessus des autres fenêtres',
+      startAtLogin: 'Démarrer à la connexion',
+    },
+  },
+  classroom: {
+    title: 'Salle de classe',
+    teacher: 'Enseignant',
+    student: 'Élève',
+    startSession: 'Démarrer la session',
+    joinSession: 'Rejoindre',
+    endForAll: 'Terminer pour tous',
+    broadcast: 'Envoyer un message à tous les élèves…',
+    onTask: 'Concentré',
+    offTask: 'Hors tâche — votre enseignant le verra',
+    leaveSession: 'Quitter la session',
+  },
+  agent: {
+    thinking: 'Réflexion…',
+    abort: 'Abandonner',
+    approveTitle: "Approuver l'appel de l'outil ?",
+    approve: 'Approuver',
+    deny: 'Refuser',
+    result: 'Résultat',
+  },
+  canvas: {
+    title: 'Toile',
+    newArtifact: '+ Nouveau',
+    noArtifacts: 'Aucun artefact pour le moment.',
+    selectOrCreate: 'Sélectionnez un artefact ou créez-en un nouveau.',
+  },
+  onboarding: {
+    welcome: 'Bienvenue dans PAiA',
+    tagline: 'Votre assistant IA axé sur la confidentialité.',
+    next: 'Suivant',
+    done: 'Terminé',
+  },
+};

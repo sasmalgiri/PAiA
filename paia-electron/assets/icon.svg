@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- PAiA app icon. The "ball" the user sees, scaled up. -->
+  <defs>
+    <radialGradient id="ballGrad" cx="38%" cy="34%" r="70%">
+      <stop offset="0%" stop-color="#bcd7ff"/>
+      <stop offset="45%" stop-color="#6aa6ff"/>
+      <stop offset="90%" stop-color="#1f3a6b"/>
+      <stop offset="100%" stop-color="#0a1729"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6aa6ff" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#6aa6ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="14"/>
+    </filter>
+  </defs>
+
+  <!-- backdrop halo -->
+  <circle cx="256" cy="256" r="240" fill="url(#halo)"/>
+
+  <!-- main ball -->
+  <circle cx="256" cy="256" r="180" fill="url(#ballGrad)"/>
+
+  <!-- specular highlight -->
+  <ellipse cx="200" cy="190" rx="60" ry="36" fill="#ffffff" opacity="0.45"/>
+  <ellipse cx="186" cy="178" rx="22" ry="14" fill="#ffffff" opacity="0.65"/>
+
+  <!-- pulse rings -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#6aa6ff" stroke-width="3" opacity="0.55"/>
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#6aa6ff" stroke-width="2" opacity="0.25"/>
+</svg>

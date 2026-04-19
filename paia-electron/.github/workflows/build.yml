@@ -1,0 +1,119 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint + test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: paia-electron
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: paia-electron/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_glob: 'release/*.exe'
+          - os: macos-latest
+            artifact_glob: 'release/*.dmg'
+          - os: ubuntu-latest
+            artifact_glob: 'release/*.AppImage'
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: paia-electron
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: paia-electron/package-lock.json
+      - run: npm ci
+      - run: npm run build:icons
+        # icons are deterministic from the SVG and are NOT committed to
+        # the repo (only the source SVG is). regenerate every build.
+      - run: npm run build
+
+      - name: Package without publishing (PRs and main pushes)
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        run: npm run pack
+
+      - name: Signing preflight (warns only on PR, strict on tags)
+        if: matrix.os != 'ubuntu-latest'
+        env:
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            npm run signing:check:strict
+          else
+            npm run signing:check
+          fi
+        shell: bash
+
+      - name: Build + publish to GitHub Releases (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          # Public key embedded in the binary so the running app can verify
+          # licenses issued by your private key. Set this in
+          # Settings → Secrets and variables → Actions → Repository secrets.
+          PAIA_PUBLIC_KEY: ${{ secrets.PAIA_PUBLIC_KEY }}
+
+          # Optional baked-in default Sentry DSN. Leave blank to keep
+          # crash reporting strictly user-configured.
+          PAIA_BUILTIN_SENTRY_DSN: ${{ secrets.PAIA_BUILTIN_SENTRY_DSN }}
+
+          # ── Windows code signing ───────────────────────────────
+          CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+          # ── macOS code signing + notarization ──────────────────
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run dist
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: paia-${{ matrix.os }}
+          path: |
+            paia-electron/release/*.exe
+            paia-electron/release/*.dmg
+            paia-electron/release/*.AppImage
+            paia-electron/release/*.deb
+          if-no-files-found: ignore
+
+      - name: Upload crash report sourcemap (Sentry)
+        if: startsWith(github.ref, 'refs/tags/v') && env.PAIA_BUILTIN_SENTRY_DSN != ''
+        env:
+          PAIA_BUILTIN_SENTRY_DSN: ${{ secrets.PAIA_BUILTIN_SENTRY_DSN }}
+        run: |
+          echo "Sourcemap upload not yet wired — add @sentry/cli here when ready."
+        shell: bash

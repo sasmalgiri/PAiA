@@ -1,0 +1,157 @@
+{
+  "name": "paia",
+  "version": "0.11.3",
+  "private": true,
+  "description": "PAiA — Privacy-first AI screen assistant",
+  "author": {
+    "name": "PAiA",
+    "email": "noreply@paia.local"
+  },
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "npm run build:main && npm run build:renderer && npm run copy:assets",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "node scripts/build-renderer.mjs",
+    "build:icons": "node scripts/build-icons.mjs",
+    "copy:assets": "node scripts/copy-renderer.mjs",
+    "start": "npm run build && node scripts/run-electron.mjs",
+    "dev": "npm run build && node scripts/run-electron.mjs --enable-logging",
+    "test": "vitest run",
+    "lint": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run signing:check && npm run build && electron-builder",
+    "dist:win": "npm run signing:check && npm run build && electron-builder --win",
+    "dist:mac": "npm run signing:check && npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux",
+    "signing:check": "node scripts/check-signing.mjs",
+    "signing:check:strict": "node scripts/check-signing.mjs --strict"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.0.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@sentry/electron": "^7.11.0",
+    "electron-log": "^5.2.4",
+    "electron-updater": "^6.3.9",
+    "highlight.js": "^11.11.0",
+    "marked": "^15.0.4",
+    "marked-highlight": "^2.2.1",
+    "pdfjs-dist": "^4.9.155",
+    "sql.js": "^1.12.0",
+    "tesseract.js": "^5.1.1"
+  },
+  "devDependencies": {
+    "@types/marked": "^6.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@types/sql.js": "^1.4.9",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "png2icons": "^2.0.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sharp": "^0.34.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "overrides": {
+    "protobufjs": "^7.5.5",
+    "hono": "^4.12.14"
+  },
+  "build": {
+    "appId": "com.paia.screenassistant",
+    "productName": "PAiA",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@huggingface/transformers/**",
+      "node_modules/onnxruntime-node/**",
+      "node_modules/onnxruntime-common/**",
+      "node_modules/sql.js/dist/**",
+      "node_modules/tesseract.js/**",
+      "node_modules/tesseract.js-core/**"
+    ],
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets",
+      "output": "release"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "REPLACE_ME",
+        "repo": "paia"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "artifactName": "PAiA-Setup-${version}.${ext}",
+      "verifyUpdateCodeSignature": false,
+      "signtoolOptions": {
+        "publisherName": "PAiA",
+        "signingHashAlgorithms": [
+          "sha256"
+        ]
+      }
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.icns",
+      "category": "public.app-category.productivity",
+      "artifactName": "PAiA-${version}-${arch}.${ext}",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "assets/entitlements.mac.plist",
+      "entitlementsInherit": "assets/entitlements.mac.plist",
+      "notarize": false
+    },
+    "afterSign": "scripts/notarize.mjs",
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.png",
+      "category": "Utility",
+      "artifactName": "PAiA-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PAiA"
+    }
+  }
+}

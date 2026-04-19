@@ -1,0 +1,21 @@
+{
+  "id": "home-assistant",
+  "name": "Home Assistant",
+  "version": "0.1.0",
+  "description": "Lets the Agent control lights, switches, sensors, locks, climate, and anything else Home Assistant exposes. Also bridges HomeKit, Matter, Zigbee, and Z-Wave via HA.",
+  "author": "PAiA reference plugins",
+  "main": "index.js",
+  "contributes": {
+    "tools": [
+      "home.listEntities",
+      "home.getState",
+      "home.turnOn",
+      "home.turnOff",
+      "home.toggle",
+      "home.setBrightness",
+      "home.setTemperature",
+      "home.callService",
+      "home.runAutomation"
+    ]
+  }
+}
