@@ -145,7 +145,7 @@ public sealed class LivePrivacyPulse
     {
         var label = new TextBlock
         {
-            Text = text,
+            Text = $"{icon} {text}",
             FontSize = 11,
             Foreground = new SolidColorBrush(ColorHelper.FromArgb(255, 128, 128, 128)),
             VerticalAlignment = VerticalAlignment.Center

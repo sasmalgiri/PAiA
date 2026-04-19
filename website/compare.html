@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAiA vs ChatGPT Desktop, Claude Desktop, Raycast AI — how they compare</title>
+  <meta name="description" content="Side-by-side comparison of PAiA against ChatGPT Desktop, Claude Desktop, Raycast AI, Perplexity. Local-first, agentic, and offline-capable.">
+  <meta property="og:title" content="PAiA vs ChatGPT / Claude / Raycast AI">
+  <meta property="og:description" content="Honest side-by-side: local-first, agentic, sync-owned, offline-capable.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html" class="active">Compare</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 40px;">
+  <div class="container">
+    <h1 style="font-size: clamp(32px, 5vw, 48px);">How PAiA compares</h1>
+    <p class="tagline">
+      An honest side-by-side against the other AI desktops you're probably also considering.
+      If another tool fits your life better, use that one — we'd rather have you happy than
+      paying us reluctantly.
+    </p>
+  </div>
+</header>
+
+<section>
+  <div class="container">
+    <div class="feature-matrix">
+      <table>
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th>PAiA</th>
+            <th>ChatGPT Desktop</th>
+            <th>Claude Desktop</th>
+            <th>Raycast AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Works fully offline</strong></td><td>✓ via Ollama</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Chats stay on your device by default</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Bring-your-own-key for any LLM</td><td>✓ (OpenAI, Anthropic, Google, 300+ via OpenRouter)</td><td>only OpenAI</td><td>only Anthropic</td><td>Raycast Pro key</td></tr>
+          <tr><td>Agent mode with tool use</td><td>✓ with approval gates</td><td>✓ GPT-4o Agent</td><td>✓ Claude computer-use (preview)</td><td>limited</td></tr>
+          <tr><td>Multi-agent teams (planner / researcher / coder / reviewer)</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Deep research with cited reports</td><td>✓ local + web</td><td>✓ (Plus / Team)</td><td>—</td><td>—</td></tr>
+          <tr><td>Canvas / artifacts (versioned)</td><td>✓</td><td>✓</td><td>✓</td><td>—</td></tr>
+          <tr><td>RAG over your own documents</td><td>✓ local embeddings</td><td>✓ server-side (GPTs)</td><td>via Projects</td><td>—</td></tr>
+          <tr><td>Screen awareness / OCR</td><td>✓ local Tesseract</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Voice (speech-to-speech)</td><td>Whisper streaming + Piper TTS</td><td>Voice Mode</td><td>—</td><td>—</td></tr>
+          <tr><td>MCP tool servers</td><td>✓ with approval</td><td>—</td><td>✓ (Claude Desktop)</td><td>—</td></tr>
+          <tr><td>Plugin SDK (third-party extensions)</td><td>✓ drop-in JS</td><td>—</td><td>—</td><td>✓ Raycast extensions</td></tr>
+          <tr><td>Home automation (Home Assistant reference plugin)</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Cross-machine encrypted sync — YOU own the storage</td><td>✓ folder / WebDAV / S3</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Local REST API for scripting</td><td>✓ with bearer auth</td><td>—</td><td>—</td><td>✓ Raycast only</td></tr>
+          <tr><td>Mobile companion via LAN PWA</td><td>✓</td><td>iOS + Android app</td><td>iOS + Android app</td><td>iOS app</td></tr>
+          <tr><td>Computer-lab / classroom mode</td><td>✓ with policy enforcement</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>OS-level enforcement (actual firewall / hosts blocks)</td><td>✓ Team tier</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Autopilot — pre-approved ambient → action rules</td><td>✓</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td>Scheduled tasks (cron / interval)</td><td>✓</td><td>✓ Plus</td><td>—</td><td>✓</td></tr>
+          <tr><td>Open-source components</td><td>✓ MIT redaction lib, source-available app</td><td>closed</td><td>closed</td><td>closed</td></tr>
+          <tr><td>macOS / Windows / Linux</td><td>✓ all three</td><td>macOS + Windows</td><td>macOS + Windows</td><td>macOS only</td></tr>
+          <tr><td>Price for an active daily user</td><td>$9/mo Pro, $249 lifetime</td><td>$20/mo Plus</td><td>$20/mo Pro</td><td>$8/mo Pro + AI add-on</td></tr>
+          <tr><td>Your prompts visible to the vendor</td><td>never (unless you use their own cloud key)</td><td>yes, by default</td><td>yes, by default</td><td>yes, by default</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section style="background: var(--bg2);">
+  <div class="container-sm">
+    <h2 class="section-title">Pick the one that fits you</h2>
+
+    <div class="local-split">
+      <div>
+        <h3 style="color: #27ae60;">Pick PAiA when</h3>
+        <ul>
+          <li>You care about your chats staying on your device.</li>
+          <li>You want to run local open-weight models (Llama, Qwen, DeepSeek).</li>
+          <li>You already have an OpenAI / Anthropic / OpenRouter key and don't want a second subscription.</li>
+          <li>You want to automate smart-home, Gmail, Calendar, GitHub via one assistant.</li>
+          <li>You teach a computer lab and need actual enforcement, not just polite suggestions.</li>
+          <li>You want to build plugins and drive the tool from scripts.</li>
+          <li>You want a single agent that owns your browser, clipboard, screen, and files — with approval gates.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color: #e67e22;">Pick something else when</h3>
+        <ul>
+          <li>You need a first-party mobile app with offline iCloud sync (use ChatGPT or Claude).</li>
+          <li>You want the absolute cutting edge of the flagship model's multimodal features the day they ship — PAiA catches up in days, not hours.</li>
+          <li>Your whole life is already in Raycast and you want everything in one launcher.</li>
+          <li>You don't want to run Ollama or bring an API key. PAiA works best when you do one of the two.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/subprocessors.html">Subprocessors</a>
+      <a href="/security.html">Security</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="mailto:hello@paia.app">Contact</a>
+      <a href="/status.html">Status</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

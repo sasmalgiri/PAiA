@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="PAiA PII redaction visualization showing 11 categories of sensitive data being scrubbed">
+  <defs>
+    <linearGradient id="privPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2230"/>
+      <stop offset="100%" stop-color="#161a22"/>
+    </linearGradient>
+    <filter id="privShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5"/>
+      <feOffset dx="0" dy="3"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"/></feComponentTransfer>
+      <feComposite in2="SourceGraphic" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="480" height="320" fill="#0a0a0b"/>
+
+  <!-- title -->
+  <text x="240" y="36" font-family="-apple-system,Segoe UI,sans-serif" font-size="14" font-weight="600" fill="#e6e9ef" text-anchor="middle">11 categories. Scrubbed before any prompt leaves your machine.</text>
+
+  <!-- ── before panel ──────────────────────────────── -->
+  <g filter="url(#privShadow)" transform="translate(20, 60)">
+    <rect x="0" y="0" width="200" height="240" rx="10" fill="url(#privPanel)" stroke="#2a3142"/>
+    <rect x="0" y="0" width="200" height="28" rx="10" fill="#1a1f2b"/>
+    <rect x="0" y="18" width="200" height="10" fill="#1a1f2b"/>
+    <line x1="0" y1="28" x2="200" y2="28" stroke="#2a3142"/>
+    <text x="14" y="18" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#ff6b6b">YOUR INPUT</text>
+
+    <text x="14" y="50" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">Hi! Please email me at</text>
+    <text x="14" y="64" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">jane.doe@example.com</text>
+    <text x="14" y="78" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">or call</text>
+    <text x="14" y="92" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">(415) 555-0199</text>
+    <text x="14" y="106" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">My AWS key is</text>
+    <text x="14" y="120" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">AKIAIOSFODNN7EXAMPLE</text>
+    <text x="14" y="134" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">SSN:</text>
+    <text x="14" y="148" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">123-45-6789</text>
+    <text x="14" y="162" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">card</text>
+    <text x="14" y="176" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">4242 4242 4242 4242</text>
+    <text x="14" y="190" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">github token</text>
+    <text x="14" y="204" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#ff6b6b">ghp_xK9aB2…</text>
+
+    <text x="14" y="226" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">5 PII items detected</text>
+  </g>
+
+  <!-- arrow -->
+  <g transform="translate(228, 180)">
+    <path d="M 0 0 L 24 0 L 18 -6 M 24 0 L 18 6" stroke="#6aa6ff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="12" y="-12" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="600" fill="#6aa6ff" text-anchor="middle">scrub</text>
+  </g>
+
+  <!-- ── after panel ───────────────────────────────── -->
+  <g filter="url(#privShadow)" transform="translate(260, 60)">
+    <rect x="0" y="0" width="200" height="240" rx="10" fill="url(#privPanel)" stroke="#4ade80"/>
+    <rect x="0" y="0" width="200" height="28" rx="10" fill="rgba(74,222,128,0.1)"/>
+    <rect x="0" y="18" width="200" height="10" fill="rgba(74,222,128,0.1)"/>
+    <line x1="0" y1="28" x2="200" y2="28" stroke="#2a3142"/>
+    <text x="14" y="18" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#4ade80">SENT TO MODEL</text>
+
+    <text x="14" y="50" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">Hi! Please email me at</text>
+    <text x="14" y="64" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[EMAIL-REDACTED]</text>
+    <text x="14" y="78" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">or call</text>
+    <text x="14" y="92" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[PHONE-REDACTED]</text>
+    <text x="14" y="106" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">My AWS key is</text>
+    <text x="14" y="120" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[AWS-KEY-REDACTED]</text>
+    <text x="14" y="134" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">SSN:</text>
+    <text x="14" y="148" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[SSN-REDACTED]</text>
+    <text x="14" y="162" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">card</text>
+    <text x="14" y="176" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[CARD-REDACTED]</text>
+    <text x="14" y="190" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#aab3c5">github token</text>
+    <text x="14" y="204" font-family="ui-monospace,Cascadia Code,Consolas,monospace" font-size="9" fill="#4ade80">[GITHUB-TOKEN-REDACTED]</text>
+
+    <text x="14" y="226" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#4ade80">🛡 5 items scrubbed</text>
+  </g>
+</svg>

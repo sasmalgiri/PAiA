@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="MCP tool approval modal asking the user to confirm a filesystem read">
+  <defs>
+    <linearGradient id="mcpPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2230"/>
+      <stop offset="100%" stop-color="#161a22"/>
+    </linearGradient>
+    <linearGradient id="mcpBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a0b"/>
+      <stop offset="100%" stop-color="#15182a"/>
+    </linearGradient>
+    <filter id="mcpShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8"/>
+      <feOffset dx="0" dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.6"/></feComponentTransfer>
+      <feComposite in2="SourceGraphic" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="480" height="320" fill="url(#mcpBg)"/>
+
+  <!-- dimmed background panel -->
+  <g opacity="0.5">
+    <rect x="40" y="40" width="400" height="240" rx="10" fill="url(#mcpPanel)" stroke="#2a3142"/>
+    <rect x="40" y="40" width="400" height="32" rx="10" fill="#1a1f2b"/>
+    <rect x="40" y="62" width="400" height="10" fill="#1a1f2b"/>
+    <line x1="40" y1="72" x2="440" y2="72" stroke="#2a3142"/>
+    <text x="60" y="60" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#e6e9ef">PAiA</text>
+    <text x="60" y="100" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#8b94a7">"Read the contents of</text>
+    <text x="60" y="114" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#8b94a7">~/Documents/notes.md"</text>
+  </g>
+
+  <!-- modal backdrop -->
+  <rect width="480" height="320" fill="rgba(0,0,0,0.6)"/>
+
+  <!-- ── modal ──────────────────────────────────────── -->
+  <g filter="url(#mcpShadow)" transform="translate(70, 50)">
+    <rect x="0" y="0" width="340" height="220" rx="12" fill="url(#mcpPanel)" stroke="#2a3142"/>
+
+    <!-- modal header -->
+    <rect x="0" y="0" width="340" height="36" rx="12" fill="#1a1f2b"/>
+    <rect x="0" y="24" width="340" height="12" fill="#1a1f2b"/>
+    <line x1="0" y1="36" x2="340" y2="36" stroke="#2a3142"/>
+    <text x="16" y="22" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6e9ef">🛡 Tool call approval</text>
+
+    <!-- body -->
+    <text x="16" y="60" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#aab3c5"><tspan font-weight="600" fill="#e6e9ef">filesystem</tspan> wants to call tool</text>
+    <text x="16" y="76" font-family="ui-monospace,Cascadia Code,monospace" font-size="11" font-weight="600" fill="#6aa6ff">read_file</text>
+
+    <text x="16" y="100" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">Inputs:</text>
+
+    <rect x="16" y="106" width="308" height="44" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+    <text x="24" y="121" font-family="ui-monospace,Cascadia Code,monospace" font-size="10" fill="#aab3c5">{</text>
+    <text x="32" y="133" font-family="ui-monospace,Cascadia Code,monospace" font-size="10" fill="#aab3c5">"path": <tspan fill="#4ade80">"/Users/me/Documents/notes.md"</tspan></text>
+    <text x="24" y="145" font-family="ui-monospace,Cascadia Code,monospace" font-size="10" fill="#aab3c5">}</text>
+
+    <text x="16" y="170" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">Tool calls run on your machine but can read files,</text>
+    <text x="16" y="180" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">hit URLs, or run code. Only approve calls you understand.</text>
+
+    <!-- buttons -->
+    <line x1="0" y1="190" x2="340" y2="190" stroke="#2a3142"/>
+    <rect x="180" y="200" width="64" height="20" rx="4" fill="transparent" stroke="#ff6b6b"/>
+    <text x="212" y="214" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#ff6b6b" text-anchor="middle">Deny</text>
+    <rect x="252" y="200" width="80" height="20" rx="4" fill="#6aa6ff"/>
+    <text x="292" y="214" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#0a0d14" text-anchor="middle">Approve</text>
+  </g>
+</svg>

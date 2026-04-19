@@ -17,7 +17,7 @@ namespace PAiA.WinUI;
 /// Solution: Pin the response. A small overlay stays on top with the answer
 /// visible. Copy buttons for each step. Dismiss when done.
 /// </summary>
-public sealed partial class PinOverlay : Window
+public sealed class PinOverlay : Window
 {
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_TOPMOST = 0x00000008;
@@ -40,14 +40,11 @@ public sealed partial class PinOverlay : Window
         var root = new Grid
         {
             Background = (Brush)Application.Current.Resources["ApplicationPageBackgroundThemeBrush"],
-            Padding = new Thickness(12),
-            RowDefinitions =
-            {
-                new RowDefinition { Height = GridLength.Auto },
-                new RowDefinition { Height = new GridLength(1, GridUnitType.Star) },
-                new RowDefinition { Height = GridLength.Auto }
-            }
+            Padding = new Thickness(12)
         };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
         // Header
         var header = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -93,18 +90,16 @@ public sealed partial class PinOverlay : Window
             HorizontalAlignment = HorizontalAlignment.Right
         };
 
+        var copyBtnContent = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 6
+        };
+        copyBtnContent.Children.Add(new FontIcon { Glyph = "\uE8C8", FontSize = 12 });
+        copyBtnContent.Children.Add(new TextBlock { Text = "Copy", FontSize = 12 });
         var copyBtn = new Button
         {
-            Content = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 6,
-                Children =
-                {
-                    new FontIcon { Glyph = "\uE8C8", FontSize = 12 },
-                    new TextBlock { Text = "Copy", FontSize = 12 }
-                }
-            },
+            Content = copyBtnContent,
             Padding = new Thickness(10, 4, 10, 4)
         };
         copyBtn.Click += (_, _) =>

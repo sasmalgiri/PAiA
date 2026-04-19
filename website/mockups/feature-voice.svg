@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="PAiA voice mode with the ball pulsing green and a transcribed message">
+  <defs>
+    <radialGradient id="voiceBall" cx="35%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#b8ffd0"/>
+      <stop offset="50%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#1a5d33"/>
+    </radialGradient>
+    <linearGradient id="voicePanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2230"/>
+      <stop offset="100%" stop-color="#161a22"/>
+    </linearGradient>
+    <filter id="voiceGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <rect width="480" height="320" fill="#0a0a0b"/>
+
+  <!-- ── ball (large, listening state) ────────────────── -->
+  <g transform="translate(110, 160)">
+    <!-- pulse rings -->
+    <circle cx="0" cy="0" r="80" fill="none" stroke="#4ade80" stroke-width="2" opacity="0.3"/>
+    <circle cx="0" cy="0" r="92" fill="none" stroke="#4ade80" stroke-width="2" opacity="0.18"/>
+    <circle cx="0" cy="0" r="104" fill="none" stroke="#4ade80" stroke-width="1.5" opacity="0.1"/>
+    <!-- glow -->
+    <circle cx="0" cy="0" r="70" fill="#4ade80" opacity="0.35" filter="url(#voiceGlow)"/>
+    <!-- core -->
+    <circle cx="0" cy="0" r="56" fill="url(#voiceBall)"/>
+    <!-- specular -->
+    <ellipse cx="-18" cy="-22" rx="14" ry="9" fill="#ffffff" opacity="0.55"/>
+    <ellipse cx="-22" cy="-26" rx="5" ry="3" fill="#ffffff" opacity="0.75"/>
+    <!-- mic icon overlay -->
+    <text x="0" y="14" font-size="28" text-anchor="middle" fill="#0a0d14">🎙</text>
+  </g>
+
+  <text x="110" y="262" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#4ade80" text-anchor="middle">listening…</text>
+  <text x="110" y="278" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7" text-anchor="middle">offline whisper</text>
+
+  <!-- ── transcript panel ─────────────────────────────── -->
+  <g transform="translate(220, 60)">
+    <rect x="0" y="0" width="240" height="200" rx="10" fill="url(#voicePanel)" stroke="#2a3142"/>
+    <rect x="0" y="0" width="240" height="32" rx="10" fill="#1a1f2b"/>
+    <rect x="0" y="22" width="240" height="10" fill="#1a1f2b"/>
+    <line x1="0" y1="32" x2="240" y2="32" stroke="#2a3142"/>
+
+    <text x="14" y="20" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" font-weight="600" fill="#e6e9ef">PAiA · voice mode</text>
+
+    <!-- live transcript -->
+    <text x="14" y="56" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">YOU SAID</text>
+    <text x="14" y="74" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#e6e9ef">"Summarize the key</text>
+    <text x="14" y="88" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#e6e9ef">points from this</text>
+    <text x="14" y="102" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#e6e9ef">research paper"</text>
+
+    <line x1="14" y1="118" x2="226" y2="118" stroke="#2a3142"/>
+
+    <text x="14" y="134" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" fill="#8b94a7">PAIA REPLIED · spoken aloud</text>
+
+    <text x="14" y="152" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">Three key findings:</text>
+    <text x="14" y="166" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">• Method outperforms</text>
+    <text x="14" y="178" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">  baseline by 12%</text>
+    <text x="14" y="192" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">• Tested on 4 datasets…</text>
+  </g>
+
+  <!-- waveform -->
+  <g transform="translate(20, 290)">
+    <rect x="0" y="-3" width="2" height="6" fill="#4ade80"/>
+    <rect x="6" y="-6" width="2" height="12" fill="#4ade80"/>
+    <rect x="12" y="-2" width="2" height="4" fill="#4ade80"/>
+    <rect x="18" y="-8" width="2" height="16" fill="#4ade80"/>
+    <rect x="24" y="-12" width="2" height="24" fill="#4ade80"/>
+    <rect x="30" y="-7" width="2" height="14" fill="#4ade80"/>
+    <rect x="36" y="-10" width="2" height="20" fill="#4ade80"/>
+    <rect x="42" y="-4" width="2" height="8" fill="#4ade80"/>
+    <rect x="48" y="-9" width="2" height="18" fill="#4ade80"/>
+    <rect x="54" y="-13" width="2" height="26" fill="#4ade80"/>
+    <rect x="60" y="-7" width="2" height="14" fill="#4ade80"/>
+    <rect x="66" y="-3" width="2" height="6" fill="#4ade80"/>
+    <rect x="72" y="-11" width="2" height="22" fill="#4ade80"/>
+    <rect x="78" y="-6" width="2" height="12" fill="#4ade80"/>
+    <rect x="84" y="-9" width="2" height="18" fill="#4ade80"/>
+    <rect x="90" y="-2" width="2" height="4" fill="#4ade80"/>
+    <rect x="96" y="-12" width="2" height="24" fill="#4ade80"/>
+    <rect x="102" y="-5" width="2" height="10" fill="#4ade80"/>
+    <rect x="108" y="-8" width="2" height="16" fill="#4ade80"/>
+    <rect x="114" y="-3" width="2" height="6" fill="#4ade80"/>
+    <rect x="120" y="-10" width="2" height="20" fill="#4ade80"/>
+    <rect x="126" y="-7" width="2" height="14" fill="#4ade80"/>
+    <rect x="132" y="-4" width="2" height="8" fill="#4ade80"/>
+    <rect x="138" y="-11" width="2" height="22" fill="#4ade80"/>
+    <rect x="144" y="-6" width="2" height="12" fill="#4ade80"/>
+    <rect x="150" y="-9" width="2" height="18" fill="#4ade80"/>
+    <rect x="156" y="-3" width="2" height="6" fill="#4ade80"/>
+    <rect x="162" y="-12" width="2" height="24" fill="#4ade80"/>
+    <rect x="168" y="-7" width="2" height="14" fill="#4ade80"/>
+    <rect x="174" y="-5" width="2" height="10" fill="#4ade80"/>
+  </g>
+</svg>

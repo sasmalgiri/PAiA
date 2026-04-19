@@ -1,0 +1,11 @@
+# PAiA security contact, per RFC 9116.
+# Publish this at https://paia.app/.well-known/security.txt AND
+# https://paia.app/security.txt (the mirror is a convention).
+
+Contact: mailto:security@paia.app
+Contact: https://paia.app/security.html
+Expires: 2027-04-19T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://paia.app/.well-known/security.txt
+Policy: https://paia.app/security.html
+Acknowledgments: https://paia.app/security.html#thanks

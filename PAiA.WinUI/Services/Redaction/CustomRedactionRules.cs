@@ -36,7 +36,7 @@ public sealed class CustomRedactionRules
     public string Apply(string text)
     {
         if (_rules.Count == 0 || string.IsNullOrEmpty(text))
-            return text;
+            return text ?? "";
 
         var result = text;
         foreach (var rule in _rules.Where(r => r.Enabled))

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Status — PAiA</title>
+  <meta name="description" content="Current operational status of PAiA cloud services.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 30px;">
+  <div class="container">
+    <h1 style="font-size: clamp(28px, 4vw, 40px);">System status</h1>
+    <p class="tagline">PAiA itself runs on your device — the cloud footprint is tiny. Here's what's up.</p>
+  </div>
+</header>
+
+<section>
+  <div class="container-sm">
+    <div class="status-list">
+      <div class="status-row">
+        <div class="status-dot ok"></div>
+        <div>
+          <div class="status-name">License issuance webhook</div>
+          <div class="status-sub">Signs + emails license keys when a purchase completes.</div>
+        </div>
+        <div class="status-val ok">Operational</div>
+      </div>
+      <div class="status-row">
+        <div class="status-dot ok"></div>
+        <div>
+          <div class="status-name">Website (paia.app)</div>
+          <div class="status-sub">Marketing site, docs, downloads.</div>
+        </div>
+        <div class="status-val ok">Operational</div>
+      </div>
+      <div class="status-row">
+        <div class="status-dot ok"></div>
+        <div>
+          <div class="status-name">Auto-update endpoint (GitHub Releases)</div>
+          <div class="status-sub">Delivered by GitHub; we inherit their uptime.</div>
+        </div>
+        <div class="status-val ok">Operational</div>
+      </div>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 64px;">Recent incidents</h2>
+    <div class="muted-note" style="text-align: center; padding: 40px 0;">No incidents reported.</div>
+
+    <h2 class="section-title">Dependencies we rely on</h2>
+    <ul>
+      <li><a href="https://www.githubstatus.com" rel="noopener">GitHub</a> — release distribution, auto-update.</li>
+      <li><a href="https://status.ollama.com" rel="noopener">Ollama</a> — model registry (first-time model pulls).</li>
+      <li>Your configured billing processor — payment + receipts.</li>
+    </ul>
+
+    <p class="muted-note" style="margin-top: 32px;">This page is currently updated manually.
+    A higher-fidelity status page (automated probes, historical uptime, subscribe to incidents)
+    is planned for post-launch.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/download.html">Download</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/subprocessors.html">Subprocessors</a>
+      <a href="/security.html">Security</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="mailto:hello@paia.app">Contact</a>
+      <a href="/status.html">Status</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

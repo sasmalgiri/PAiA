@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAiA — Privacy-first AI screen assistant</title>
+<meta name="description" content="On-demand AI screen assistant. 4-signal screen intelligence. 3-layer PII redaction. 100% local via Ollama. Open source. The anti-Recall.">
+<meta name="keywords" content="privacy AI, screen assistant, Microsoft Recall alternative, local AI, Ollama, open source">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0b;
+  --bg2: #111113;
+  --bg3: #1a1a1e;
+  --text: #e8e6e3;
+  --text2: #9b9a97;
+  --text3: #6b6a67;
+  --accent: #22c55e;
+  --accent2: #16a34a;
+  --accent-dim: rgba(34,197,94,0.08);
+  --danger: #ef4444;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.1);
+  --font: 'DM Sans', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--bg3); padding: 2px 7px; border-radius: 4px; }
+
+/* ═══ GRAIN OVERLAY ═══ */
+body::after {
+  content: '';
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+}
+
+/* ═══ LAYOUT ═══ */
+.container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+section { padding: 100px 0; }
+
+/* ═══ NAV ═══ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  background: rgba(10,10,11,0.8);
+  border-bottom: 1px solid var(--border);
+}
+nav .container {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 64px;
+}
+.logo {
+  font-size: 20px; font-weight: 600; letter-spacing: -0.5px;
+  color: var(--text);
+}
+.logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 32px; align-items: center; }
+.nav-links a { color: var(--text2); font-size: 14px; font-weight: 400; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 22px; border-radius: 8px;
+  font-family: var(--font); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s; border: none;
+}
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: var(--accent2); text-decoration: none; }
+.btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text); }
+.btn-outline:hover { border-color: var(--text3); background: var(--bg3); text-decoration: none; }
+
+/* ═══ HERO ═══ */
+.hero {
+  padding-top: 160px; padding-bottom: 80px;
+  text-align: center; position: relative;
+}
+.hero::before {
+  content: '';
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(34,197,94,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 16px; border-radius: 100px;
+  background: var(--accent-dim); border: 1px solid rgba(34,197,94,0.15);
+  font-size: 13px; color: var(--accent); font-weight: 500;
+  margin-bottom: 32px;
+  animation: fadeUp 0.6s ease both;
+}
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+h1 {
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 600; letter-spacing: -2px; line-height: 1.05;
+  margin-bottom: 24px;
+  animation: fadeUp 0.6s 0.1s ease both;
+}
+h1 em { font-style: italic; font-weight: 300; color: var(--text2); }
+.hero-sub {
+  font-size: 18px; color: var(--text2); max-width: 560px; margin: 0 auto 40px;
+  line-height: 1.7;
+  animation: fadeUp 0.6s 0.2s ease both;
+}
+.hero-actions {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+  animation: fadeUp 0.6s 0.3s ease both;
+}
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ═══ TERMINAL DEMO ═══ */
+.terminal {
+  max-width: 640px; margin: 60px auto 0;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 12px;
+  overflow: hidden;
+  animation: fadeUp 0.6s 0.4s ease both;
+}
+.terminal-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.terminal-dot { width: 10px; height: 10px; border-radius: 50%; }
+.terminal-body {
+  padding: 20px; font-family: var(--mono); font-size: 13px;
+  line-height: 1.8; color: var(--text2);
+}
+.terminal-body .cmd { color: var(--accent); }
+.terminal-body .comment { color: var(--text3); }
+.terminal-body .output { color: var(--text); }
+
+/* ═══ PRIVACY BAR ═══ */
+.privacy-bar {
+  max-width: 720px; margin: 40px auto 0;
+  display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;
+  padding: 16px 24px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--mono); font-size: 12px;
+  animation: fadeUp 0.6s 0.5s ease both;
+}
+.privacy-bar span { display: flex; align-items: center; gap: 6px; }
+.privacy-bar .ok { color: var(--accent); }
+.privacy-bar .warn { color: #eab308; }
+
+/* ═══ ANTI-RECALL SECTION ═══ */
+.anti { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.anti h2 { font-size: 36px; font-weight: 600; letter-spacing: -1px; margin-bottom: 12px; text-align: center; }
+.anti .sub { text-align: center; color: var(--text2); font-size: 16px; max-width: 520px; margin: 0 auto 48px; }
+
+.complaint-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
+.complaint {
+  padding: 24px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: border-color 0.3s;
+}
+.complaint:hover { border-color: var(--border2); }
+.complaint-label {
+  font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--danger); margin-bottom: 8px;
+}
+.complaint h3 { font-size: 15px; font-weight: 500; margin-bottom: 10px; line-height: 1.4; }
+.complaint p { font-size: 13px; color: var(--accent); line-height: 1.6; }
+.complaint p::before { content: 'PAiA: '; font-weight: 500; }
+
+/* ═══ HOW IT WORKS ═══ */
+.how h2 { font-size: 36px; font-weight: 600; letter-spacing: -1px; margin-bottom: 48px; text-align: center; }
+.steps {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+}
+.step {
+  padding: 32px 28px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  text-align: center;
+}
+.step-num {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid rgba(34,197,94,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 600; color: var(--accent);
+  margin: 0 auto 20px;
+}
+.step h3 { font-size: 17px; font-weight: 500; margin-bottom: 10px; }
+.step p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+/* ═══ SIGNALS ═══ */
+.signals { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.signals h2 { font-size: 36px; font-weight: 600; letter-spacing: -1px; margin-bottom: 12px; text-align: center; }
+.signals .sub { text-align: center; color: var(--text2); font-size: 16px; max-width: 500px; margin: 0 auto 48px; }
+.signal-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+}
+.signal {
+  padding: 28px; border-radius: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+}
+.signal-tag {
+  display: inline-block; padding: 3px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 500; margin-bottom: 12px;
+  background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(34,197,94,0.15);
+}
+.signal h3 { font-size: 16px; font-weight: 500; margin-bottom: 8px; }
+.signal p { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* ═══ MODELS ═══ */
+.models h2 { font-size: 36px; font-weight: 600; letter-spacing: -1px; margin-bottom: 12px; text-align: center; }
+.models .sub { text-align: center; color: var(--text2); font-size: 16px; max-width: 500px; margin: 0 auto 48px; }
+.model-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 14px;
+}
+.model-table th {
+  text-align: left; padding: 12px 16px;
+  font-weight: 500; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--text3);
+  border-bottom: 1px solid var(--border2);
+}
+.model-table td {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+.model-table tr:hover td { background: var(--bg2); }
+.model-table .name { color: var(--text); font-weight: 500; font-family: var(--mono); font-size: 13px; }
+.rec { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: var(--accent-dim); color: var(--accent); }
+
+/* ═══ CTA ═══ */
+.cta {
+  text-align: center;
+  background: var(--bg2); border-top: 1px solid var(--border);
+}
+.cta h2 { font-size: 40px; font-weight: 600; letter-spacing: -1.5px; margin-bottom: 16px; }
+.cta p { font-size: 16px; color: var(--text2); margin-bottom: 32px; }
+.cta-code {
+  display: inline-block;
+  padding: 14px 28px;
+  background: var(--bg); border: 1px solid var(--border2); border-radius: 10px;
+  font-family: var(--mono); font-size: 14px; color: var(--accent);
+  margin-bottom: 24px;
+  user-select: all; cursor: pointer;
+}
+.cta-links { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* ═══ FOOTER ═══ */
+footer {
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  text-align: center; font-size: 13px; color: var(--text3);
+}
+footer a { color: var(--text2); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 768px) {
+  .steps { grid-template-columns: 1fr; }
+  .signal-grid { grid-template-columns: 1fr; }
+  .complaint-grid { grid-template-columns: 1fr; }
+  .nav-links a:not(.btn) { display: none; }
+  h1 { letter-spacing: -1px; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="logo">P<span>Ai</span>A</div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#vs-recall">vs Recall</a>
+      <a href="#models">Models</a>
+      <a href="https://github.com/paia-screen/paia" class="btn btn-outline">GitHub</a>
+      <a href="https://github.com/paia-screen/paia/releases" class="btn btn-primary">Download</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="badge">Open source &middot; MIT License</div>
+    <h1>Your screen. <em>Your AI.</em><br>Your machine.</h1>
+    <p class="hero-sub">On-demand AI screen assistant that captures only when you ask, processes everything locally, and never sends a byte to the cloud.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/paia-screen/paia/releases" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download for Windows
+      </a>
+      <a href="https://github.com/paia-screen/paia" class="btn btn-outline">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot" style="background:#ff5f57"></div>
+        <div class="terminal-dot" style="background:#febc2e"></div>
+        <div class="terminal-dot" style="background:#28c840"></div>
+      </div>
+      <div class="terminal-body">
+        <span class="comment"># Install Ollama + pull a model</span><br>
+        <span class="cmd">$</span> winget install Ollama<br>
+        <span class="cmd">$</span> ollama pull qwen3.5:9b<br><br>
+        <span class="comment"># Download PAiA and run</span><br>
+        <span class="cmd">$</span> paia.exe<br>
+        <span class="output">✓ Ollama auto-detected on localhost:11434</span><br>
+        <span class="output">✓ Model: qwen3.5:9b (16GB VRAM detected)</span><br>
+        <span class="output">✓ Global hotkey registered: Ctrl+Shift+P</span><br>
+        <span class="output">✓ System tray active — ready</span><br>
+      </div>
+    </div>
+
+    <div class="privacy-bar">
+      <span class="ok">● Network: isolated</span>
+      <span class="ok">● Memory: no screenshots</span>
+      <span class="ok">● Disk: no images</span>
+      <span class="ok">● Score: 100/100</span>
+    </div>
+  </div>
+</section>
+
+<section class="how" id="how">
+  <div class="container">
+    <h2>Three actions. That's it.</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Capture</h3>
+        <p>Click the button or press <code>Ctrl+Shift+P</code> from anywhere. Windows shows the system picker — select a window or region. PAiA runs OCR, UI Automation, NER, and vision analysis in parallel.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Ask</h3>
+        <p>Click a context-aware quick action — "Fix this error", "Draft reply", "Explain code" — or type your own question. PAiA streams the answer with full screen context.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Use</h3>
+        <p>Code blocks auto-queue to clipboard. Pin the response to stay visible. Keep chatting. Everything saves to searchable history. Done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="signals" id="signals">
+  <div class="container">
+    <h2>4-signal screen intelligence</h2>
+    <p class="sub">PAiA doesn't just read text from your screen. It understands it.</p>
+    <div class="signal-grid">
+      <div class="signal">
+        <span class="signal-tag">Signal 1</span>
+        <h3>OCR — text from pixels</h3>
+        <p>Windows OCR API extracts every visible word. Works on any app, any language. The universal fallback that never fails.</p>
+      </div>
+      <div class="signal">
+        <span class="signal-tag">Signal 2</span>
+        <h3>UI Automation — structured controls</h3>
+        <p>Windows Accessibility API reads the actual UI tree: button labels, text field values, enabled/disabled states, dropdown options, tab hierarchy. 10x more accurate than OCR for native apps.</p>
+      </div>
+      <div class="signal">
+        <span class="signal-tag">Signal 3</span>
+        <h3>Vision model — visual understanding</h3>
+        <p>If you have a vision-capable model (qwen-vl, llava), PAiA sends the screenshot for layout analysis, chart reading, icon recognition, and visual context that text can't capture.</p>
+      </div>
+      <div class="signal">
+        <span class="signal-tag">Signal 4</span>
+        <h3>Active window — app context</h3>
+        <p>Win32 APIs identify the app name, process, and even browser URL. PAiA knows you're in "invoice.xlsx in Excel" or "github.com in Chrome" before OCR runs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="anti" id="vs-recall">
+  <div class="container">
+    <h2>The anti-Recall</h2>
+    <p class="sub">Every complaint users made about Microsoft's approach. Every one answered.</p>
+    <div class="complaint-grid">
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"Screenshots every few seconds — always-on surveillance"</h3>
+        <p>Captures ONLY when you click. Zero background monitoring. MemorySafeBitmap auto-deletes from RAM in 30 seconds.</p>
+      </div>
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"Data sent to the cloud without my knowledge"</h3>
+        <p>100% local via Ollama. PrivacyGuard enforces localhost-only at code level. Zero bytes leave your machine.</p>
+      </div>
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"AI shoved into every app without asking"</h3>
+        <p>Separate app you choose to open. Lives in system tray, invisible until you call it. No buttons injected into other apps.</p>
+      </div>
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"Can't uninstall or disable it"</h3>
+        <p>One-click "Revoke Consent &amp; Delete All Data". DataWiper zero-overwrites everything. Delete the folder and it's gone.</p>
+      </div>
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"Unencrypted screenshot database"</h3>
+        <p>No screenshot database exists. RAM only, 30s max. Audit logs contain only redacted text with SHA-256 hashes.</p>
+      </div>
+      <div class="complaint">
+        <div class="complaint-label">Microsoft</div>
+        <h3>"Captures banking and password apps"</h3>
+        <p>SensitiveAppFilter auto-detects banking, password managers, medical portals and warns BEFORE processing. 3-layer PII redaction catches what you miss.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="models" id="models">
+  <div class="container">
+    <h2>Pick your model</h2>
+    <p class="sub">PAiA works with any Ollama model. Use the model picker to switch anytime.</p>
+    <table class="model-table">
+      <thead>
+        <tr><th>Model</th><th>Hardware</th><th>Speed</th><th>Best for</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="name">qwen3.5:27b</td>
+          <td>24GB+ VRAM</td>
+          <td>20-40 t/s</td>
+          <td>Best quality — rivals cloud models</td>
+          <td><span class="rec">top pick</span></td>
+        </tr>
+        <tr>
+          <td class="name">qwen3.5:9b</td>
+          <td>16GB RAM</td>
+          <td>40-70 t/s</td>
+          <td>Best balance for most users</td>
+          <td><span class="rec">recommended</span></td>
+        </tr>
+        <tr>
+          <td class="name">qwen2.5-coder:14b</td>
+          <td>16GB RAM</td>
+          <td>30-50 t/s</td>
+          <td>Code-focused workflows</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name">deepseek-r1:14b</td>
+          <td>16GB RAM</td>
+          <td>30-50 t/s</td>
+          <td>Deep reasoning, debugging</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name">phi4-mini</td>
+          <td>8GB / CPU</td>
+          <td>8-60 t/s</td>
+          <td>CPU-only systems, quick tasks</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td class="name">gemma3:1b</td>
+          <td>Any hardware</td>
+          <td>15-100 t/s</td>
+          <td>Ultra-light, weakest hardware</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="container">
+    <h2>Start in under 2 minutes</h2>
+    <p>Install Ollama. Pull a model. Run PAiA. That's it.</p>
+    <div class="cta-code" title="Click to copy">ollama pull qwen3.5:9b && paia.exe</div>
+    <div class="cta-links">
+      <a href="https://github.com/paia-screen/paia/releases" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download PAiA
+      </a>
+      <a href="https://github.com/paia-screen/paia" class="btn btn-outline">View source</a>
+      <a href="https://github.com/paia-screen/paia/blob/main/GETTING_STARTED.md" class="btn btn-outline">Setup guide</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <p>PAiA is open source under the MIT License. Your screen, your AI, your machine.</p>
+    <p style="margin-top: 8px;">
+      <a href="https://github.com/paia-screen/paia">GitHub</a> &middot;
+      <a href="https://github.com/paia-screen/paia/blob/main/PRIVACY.md">Privacy</a> &middot;
+      <a href="https://github.com/paia-screen/paia/blob/main/FAQ.md">FAQ</a> &middot;
+      <a href="https://github.com/paia-screen/paia/blob/main/ARCHITECTURE.md">Architecture</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+document.querySelector('.cta-code')?.addEventListener('click', function() {
+  navigator.clipboard?.writeText(this.textContent.trim());
+  const orig = this.textContent;
+  this.textContent = '✓ Copied!';
+  setTimeout(() => this.textContent = orig, 1500);
+});
+
+// Scroll animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.step, .signal, .complaint').forEach(el => {
+  el.style.opacity = '0'; el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>

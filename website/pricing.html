@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — PAiA</title>
+  <meta name="description" content="Free is usable. Pro unlocks agent, deep research, canvas, cloud providers, connectors, and more. Team adds classroom and OS-level enforcement. 14-day trial, no card.">
+  <meta property="og:title" content="PAiA pricing">
+  <meta property="og:description" content="Free is usable. Pro unlocks the heavy features. Team adds classroom control. 14-day trial.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://paia.app/pricing.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html" class="active">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 40px;">
+  <div class="container">
+    <h1 style="font-size: clamp(36px, 5vw, 52px);">Simple pricing. Real free tier.</h1>
+    <p class="tagline">
+      Free does most of what people actually use an AI assistant for.
+      Pro unlocks the agentic, connector, and power-user features. Team adds
+      classroom and OS-level enforcement. 14-day trial of Pro on every install.
+    </p>
+  </div>
+</header>
+
+<section style="padding-top: 20px;">
+  <div class="container">
+    <div class="pricing-grid">
+
+      <!-- FREE -->
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0<small> / forever</small></div>
+        <div class="plan-tagline">The local chat + voice assistant.</div>
+        <ul>
+          <li>Floating ball + chat panel</li>
+          <li>Multi-thread chat with persistence</li>
+          <li>Local Ollama models (any model you pull)</li>
+          <li>Voice input (Chromium + offline Whisper)</li>
+          <li>System + Piper TTS</li>
+          <li>11-category PII redaction</li>
+          <li>Screen capture + full-screen OCR</li>
+          <li>Quick actions on selected text</li>
+          <li>Active window context</li>
+          <li>Long-term memory (up to 200 entries)</li>
+          <li>3 RAG documents total</li>
+          <li>5 agent runs per day</li>
+          <li>2 deep research runs per day</li>
+          <li>3 image generations per day</li>
+          <li class="no">Connectors (Gmail / Calendar / Drive / GitHub / Slack)</li>
+          <li class="no">Cloud providers (OpenAI / Anthropic / …)</li>
+          <li class="no">Canvas artifacts, MCP, scheduler, plugins</li>
+          <li class="no">Ambient / autopilot, web search</li>
+        </ul>
+        <a href="/download.html" class="btn btn-ghost">Download free</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="plan featured">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$9<small> / month</small></div>
+        <div class="plan-tagline">For daily drivers and power users.</div>
+        <ul>
+          <li><strong>Everything in Free, uncapped, plus:</strong></li>
+          <li>Agent mode — plan → act → observe with tool use</li>
+          <li>Deep research — multi-source cited reports</li>
+          <li>Multi-agent team runs (planner + researcher + coder + reviewer)</li>
+          <li>Canvas artifacts (code, markdown, HTML, SVG)</li>
+          <li>Unlimited RAG + unlimited memory entries</li>
+          <li>Cloud providers (OpenAI, Anthropic, 300+ via OpenRouter)</li>
+          <li>MCP tool servers with per-call approval</li>
+          <li>Connectors — Gmail, Calendar, Drive, GitHub, Slack (BYO OAuth)</li>
+          <li>Ambient mode + autopilot rules</li>
+          <li>Scheduler (cron / interval / one-shot triggers)</li>
+          <li>Browser-use agent (local + remote CDP)</li>
+          <li>Image + video generation (6 providers)</li>
+          <li>E2E-encrypted cloud sync (S3, WebDAV, folder)</li>
+          <li>Local REST API for Raycast / Alfred / scripts</li>
+          <li>Mobile companion (LAN PWA)</li>
+          <li>Plugins (SDK + Home Assistant reference)</li>
+          <li>Multi-window detachable chats</li>
+          <li>Duplex voice (streaming Whisper)</li>
+          <li>Priority email support</li>
+        </ul>
+        <a href="#buy-pro" class="btn btn-primary" data-buy="pro-monthly">Start 14-day trial</a>
+        <p class="plan-small">Yearly: $90 / year (save 17%). Lifetime: $249.</p>
+      </div>
+
+      <!-- TEAM -->
+      <div class="plan">
+        <div class="plan-name">Team</div>
+        <div class="plan-price">$19<small> / seat / month</small></div>
+        <div class="plan-tagline">Classrooms, labs, and small companies.</div>
+        <ul>
+          <li><strong>Everything in Pro, plus:</strong></li>
+          <li>Classroom mode (teacher dashboard + student lock)</li>
+          <li>OS-level enforcement (real firewall / hosts blocks)</li>
+          <li>Policy-driven allow-lists per session</li>
+          <li>Activity feed + violation reports</li>
+          <li>Broadcast-to-all messaging</li>
+          <li>Min 5 seats · annual only</li>
+          <li>DPA available on request</li>
+          <li>Shared configuration rollout</li>
+          <li>Email support with named contact</li>
+        </ul>
+        <a href="mailto:sales@paia.app?subject=PAiA Team enquiry" class="btn btn-ghost">Talk to us</a>
+        <p class="plan-small">Quote-based for 50+ seats.</p>
+      </div>
+
+    </div>
+
+    <p style="text-align: center; margin-top: 48px; color: var(--text3); font-size: 13px;">
+      Every Pro feature unlocks for <strong>14 days on first install</strong> — no card, no account.
+      After that you fall back to Free. No feature is removed retroactively; everything you
+      created during the trial stays.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ Feature matrix ═══ -->
+<section style="background: var(--bg2);">
+  <div class="container">
+    <h2 class="section-title">Full feature matrix</h2>
+    <div class="feature-matrix">
+      <table>
+        <thead>
+          <tr><th>Capability</th><th>Free</th><th>Pro</th><th>Team</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Chat, voice, screen capture, memory, personas</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Local models via Ollama (any)</td><td>✓</td><td>✓</td><td>✓</td></tr>
+          <tr><td>RAG knowledge collections</td><td>3 docs</td><td>unlimited</td><td>unlimited</td></tr>
+          <tr><td>Agent runs / day</td><td>5</td><td>unlimited</td><td>unlimited</td></tr>
+          <tr><td>Deep research / day</td><td>2</td><td>unlimited</td><td>unlimited</td></tr>
+          <tr><td>Image generation / day</td><td>3</td><td>unlimited</td><td>unlimited</td></tr>
+          <tr><td>Cloud LLM providers (OpenAI / Anthropic / …)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Connectors — Gmail, Calendar, Drive, GitHub, Slack</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Multi-agent team orchestration</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Canvas artifacts (versioned)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>MCP tool servers</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Ambient + autopilot rules</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Scheduler (cron / interval)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Browser-use + remote browser (CDP)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Web search with redaction</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Image + video generation</td><td>3/day</td><td>✓</td><td>✓</td></tr>
+          <tr><td>E2E-encrypted sync (folder / WebDAV / S3)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Local REST API server</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Mobile companion (LAN PWA)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Plugins (SDK)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Multi-window detachable chats</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Streaming duplex voice (Whisper)</td><td>—</td><td>✓</td><td>✓</td></tr>
+          <tr><td>Classroom mode (teacher + student)</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>OS-level enforcement (firewall / hosts / iptables)</td><td>—</td><td>—</td><td>✓</td></tr>
+          <tr><td>DPA, bulk licensing, priority support</td><td>—</td><td>—</td><td>✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ Local-first guarantees ═══ -->
+<section>
+  <div class="container-sm">
+    <h2 class="section-title">What stays on your device</h2>
+    <div class="local-split">
+      <div>
+        <h3 style="color: #27ae60;">Always local</h3>
+        <ul>
+          <li>Conversations, threads, messages</li>
+          <li>Voice recordings + transcripts</li>
+          <li>Screen captures + OCR output</li>
+          <li>Knowledge collections + RAG embeddings</li>
+          <li>Long-term memory entries</li>
+          <li>Agent traces, research reports, canvas artifacts</li>
+          <li>Plugin data, classroom activity logs</li>
+          <li>OAuth tokens for connectors</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="color: #e67e22;">Leaves only when YOU opt in</h3>
+        <ul>
+          <li>Cloud LLM prompts (you supply the key)</li>
+          <li>Sync objects (AES-256-GCM encrypted client-side)</li>
+          <li>Connector calls (your Google / GitHub / Slack APIs)</li>
+          <li>Web-search queries (redacted, DuckDuckGo)</li>
+          <li>Image / video gen (your provider key)</li>
+          <li>Crash reports (off unless you paste a DSN)</li>
+          <li>Analytics (off unless you enable an endpoint)</li>
+          <li>Auto-update check (GitHub Releases, disable-able)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section style="background: var(--bg2);">
+  <div class="container-sm">
+    <h2 class="section-title">Frequently asked</h2>
+
+    <div style="margin-top: 40px;">
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Do I need to be online?</summary>
+        <p style="margin-top: 12px;">No — the core loop is fully offline. The only outbound calls are: to your local Ollama daemon (loopback); to download Whisper / Tesseract / Piper models on first use (one time, cached); and to GitHub Releases for auto-update (toggleable).</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">What cloud services do you run?</summary>
+        <p style="margin-top: 12px;">Only the billing webhook that issues signed license keys — it never sees your chats, prompts, or documents. Everything the product does runs on your device or talks directly to third parties you configured yourself.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">How does the trial work?</summary>
+        <p style="margin-top: 12px;">14 days, no card, no signup. First launch records the start date locally. Every Pro feature unlocks for those 14 days. When it ends, you fall back to Free — every thread, document, memory, and artifact you created during the trial stays.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Can I extend my trial?</summary>
+        <p style="margin-top: 12px;">If someone shares a PAiA referral code with you (or we comp you one for a bug report), you can paste it into Settings → License → Redeem. Signed Ed25519 blobs, replay-protected.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Refunds?</summary>
+        <p style="margin-top: 12px;">30 days, no questions, full refund. Monthly plans cancel at the end of the current period. Yearly plans can cancel and refund pro-rata.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Commercial use?</summary>
+        <p style="margin-top: 12px;">Yes, Pro and Team both cover commercial use. Pro is per-seat (one person). Team is multi-seat with per-contract terms + an optional DPA.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">How many machines per license?</summary>
+        <p style="margin-top: 12px;">Pro: activate on up to 3 of your own devices. Team: one seat per named user, activate on that user's primary and backup device. Transferable if you change machines.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">How do you enforce licensing?</summary>
+        <p style="margin-top: 12px;">Ed25519 signed JSON blobs, verified offline in the app. No phone-home, no DRM, no anti-tampering. Honest customers pay; pirates aren't your customers.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Education discount?</summary>
+        <p style="margin-top: 12px;">Yes — 50% off Pro with any .edu email or verifiable student status. For classrooms on the Team tier, email us directly and we'll quote by enrollment.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">What happens to my data if I cancel?</summary>
+        <p style="margin-top: 12px;">Nothing. Everything lives in your local user-data folder. Cancelling just locks Pro features. Your threads, documents, memory, and artifacts remain and work under the Free caps.</p>
+      </details>
+      <details style="padding: 16px 0; border-bottom: 1px solid var(--border);">
+        <summary style="font-weight: 600; cursor: pointer;">Is PAiA open source?</summary>
+        <p style="margin-top: 12px;">The redaction library is (MIT). The app itself is source-available for audit but proprietary — see the <a href="/legal/EULA">EULA</a>. We plan to open more components over time.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/subprocessors.html">Subprocessors</a>
+      <a href="/security.html">Security</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="mailto:hello@paia.app">Contact</a>
+      <a href="/status.html">Status</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

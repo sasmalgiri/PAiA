@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subprocessors — PAiA</title>
+  <meta name="description" content="The third parties we engage to deliver paid tiers of PAiA, and what data each touches.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 30px;">
+  <div class="container">
+    <h1 style="font-size: clamp(28px, 4vw, 40px);">Subprocessors</h1>
+    <p class="tagline">Last updated: <span data-placeholder="[DATE]">[DATE]</span>.</p>
+  </div>
+</header>
+
+<section>
+  <div class="container-sm legal-body">
+    <p>A "subprocessor" here means a third party we engage to deliver the paid tiers of PAiA
+    and which may touch limited customer data. It does <strong>not</strong> include third
+    parties <em>you</em> configure yourself (OpenAI, Anthropic, Google, GitHub, your sync host,
+    your Sentry DSN, your feedback collector) — in those cases your relationship is directly
+    with that provider under their own terms.</p>
+
+    <div class="feature-matrix">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Purpose</th>
+            <th>Data touched</th>
+            <th>Region</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span data-placeholder="[Billing processor]">[Billing processor — Paddle / LemonSqueezy / Stripe]</span></td>
+            <td>Payment + billing</td>
+            <td>Name, email, country, payment-method metadata, order history</td>
+            <td>US / EU</td>
+          </tr>
+          <tr>
+            <td><span data-placeholder="[Email delivery]">[Email delivery — Resend / Postmark / SendGrid]</span></td>
+            <td>Transactional email (license keys, receipts, support)</td>
+            <td>Name, email, license key</td>
+            <td>US / EU</td>
+          </tr>
+          <tr>
+            <td><span data-placeholder="[License host]">[License host — Fly.io / Railway / own infra]</span></td>
+            <td>Accepting license-issuance webhooks from the billing processor</td>
+            <td>Name, email, license key, payload signatures</td>
+            <td>User-specified region</td>
+          </tr>
+          <tr>
+            <td><span data-placeholder="[Analytics]">[Analytics — Plausible / self-hosted]</span></td>
+            <td>Opt-in product analytics (strictly off by default)</td>
+            <td>Anonymous install UUID, event names from a property whitelist</td>
+            <td>EU</td>
+          </tr>
+          <tr>
+            <td><span data-placeholder="[Crash reporter]">[Crash reporter — self-hosted GlitchTip / Sentry Cloud]</span></td>
+            <td>Opt-in crash telemetry (strictly off by default)</td>
+            <td>Stack traces, PAiA version, redacted breadcrumbs</td>
+            <td>EU</td>
+          </tr>
+          <tr>
+            <td>GitHub</td>
+            <td>Release distribution + auto-update check</td>
+            <td>Install IP + user-agent (logged by GitHub)</td>
+            <td>US</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>Adding or removing subprocessors</h2>
+    <p>For Team-tier customers on a signed DPA, we notify via email at least 30 days before
+    engaging a new subprocessor. You may reasonably object on data-protection grounds; if we
+    cannot resolve the objection, you may terminate the affected portion of the Service.</p>
+
+    <h2>Change log</h2>
+    <ul>
+      <li><span data-placeholder="[DATE]">[DATE]</span> — initial list.</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/download.html">Download</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/subprocessors.html">Subprocessors</a>
+      <a href="/security.html">Security</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="mailto:hello@paia.app">Contact</a>
+      <a href="/status.html">Status</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" role="img" aria-label="Quick actions popup with 8 buttons over a piece of selected text">
+  <defs>
+    <linearGradient id="qBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0a0a0b"/>
+      <stop offset="100%" stop-color="#0f1322"/>
+    </linearGradient>
+    <linearGradient id="qPanel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2230"/>
+      <stop offset="100%" stop-color="#161a22"/>
+    </linearGradient>
+    <filter id="qShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8"/>
+      <feOffset dx="0" dy="6"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.55"/></feComponentTransfer>
+      <feComposite in2="SourceGraphic" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="480" height="320" fill="url(#qBg)"/>
+
+  <!-- ── popup ───────────────────────────────────────── -->
+  <g filter="url(#qShadow)" transform="translate(60, 30)">
+    <rect x="0" y="0" width="360" height="260" rx="12" fill="url(#qPanel)" stroke="#2a3142"/>
+
+    <!-- header -->
+    <rect x="0" y="0" width="360" height="36" rx="12" fill="#1a1f2b"/>
+    <rect x="0" y="24" width="360" height="12" fill="#1a1f2b"/>
+    <line x1="0" y1="36" x2="360" y2="36" stroke="#2a3142"/>
+    <text x="16" y="22" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="600" fill="#e6e9ef">⚡ Quick action</text>
+    <text x="340" y="22" font-family="-apple-system,Segoe UI,sans-serif" font-size="14" fill="#8b94a7" text-anchor="end">×</text>
+
+    <!-- selected text preview -->
+    <rect x="16" y="48" width="328" height="68" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+    <text x="24" y="64" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">The mitochondria is the powerhouse</text>
+    <text x="24" y="78" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">of the cell, responsible for producing</text>
+    <text x="24" y="92" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">most of the cell's supply of adenosine</text>
+    <text x="24" y="106" font-family="-apple-system,Segoe UI,sans-serif" font-size="10" fill="#aab3c5">triphosphate (ATP)…</text>
+
+    <!-- 8 action buttons in a 4×2 grid -->
+    <!-- row 1 -->
+    <g transform="translate(16, 130)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">💡</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Explain</text>
+    </g>
+    <g transform="translate(100, 130)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">📝</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Summarize</text>
+    </g>
+    <g transform="translate(184, 130)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="rgba(106,166,255,0.18)" stroke="#6aa6ff"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">🌐</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#6aa6ff" text-anchor="middle">Translate</text>
+    </g>
+    <g transform="translate(268, 130)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">✍️</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Rewrite</text>
+    </g>
+    <!-- row 2 -->
+    <g transform="translate(16, 188)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">🛠</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Fix</text>
+    </g>
+    <g transform="translate(100, 188)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">🤝</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Friendly</text>
+    </g>
+    <g transform="translate(184, 188)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">✂️</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Shorten</text>
+    </g>
+    <g transform="translate(268, 188)">
+      <rect x="0" y="0" width="76" height="48" rx="6" fill="#1a1f2b" stroke="#2a3142"/>
+      <text x="38" y="22" font-size="20" text-anchor="middle">📖</text>
+      <text x="38" y="40" font-family="-apple-system,Segoe UI,sans-serif" font-size="9" font-weight="500" fill="#e6e9ef" text-anchor="middle">Expand</text>
+    </g>
+  </g>
+
+  <!-- caption -->
+  <text x="240" y="304" font-family="-apple-system,Segoe UI,sans-serif" font-size="11" fill="#8b94a7" text-anchor="middle">Select text in any app · Ctrl+C · Ctrl+Alt+Q</text>
+</svg>

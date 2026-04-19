@@ -20,16 +20,30 @@ using PAiA.WinUI.Services.Privacy;
 using PAiA.WinUI.Services.Redaction;
 using PAiA.WinUI.Services.SecurityLab;
 using PAiA.WinUI.Services.ScreenIntel;
+using PAiA.WinUI.Services.Safety;
+using PAiA.WinUI.Services.WebSearch;
+using PAiA.WinUI.Services.Voice;
+using PAiA.WinUI.Services.Assistant;
 using PAiA.WinUI.Services.ActiveWindow;
 using PAiA.WinUI.Services.Plugin;
 using PAiA.WinUI.Services.Shell;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics.Capture;
+using System.Runtime.InteropServices;
 
 namespace PAiA.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    // ─── Win32 subclass proc for hotkey message interception ────────
+    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+    private const int GWLP_WNDPROC = -4;
+    private IntPtr _originalWndProc;
+    private WndProcDelegate? _wndProcDelegate; // prevent GC collection
     // ─── ALL Services ──────────────────────────────────────────────
     private readonly ScreenCaptureService _capture;
     private readonly OcrService _ocr;
@@ -59,12 +73,19 @@ public sealed partial class MainWindow : Window
     private readonly NerService _ner;
     private readonly ActiveWindowMonitor _windowMonitor;
     private readonly PluginManager _plugins;
+    private readonly WebSearchService _webSearch;
+    private readonly SearchQuerySanitizer _searchSanitizer;
+    private readonly VoiceService _voice;
+    private readonly AssistantOrchestrator _assistant;
+    private ProactiveContextEngine _proactiveContext;
+    private CompactWidget? _widget;
 
     // ─── State ─────────────────────────────────────────────────────
     private GraphicsCaptureItem? _captureTarget;
     private ScreenContext? _currentScreen;
     private CancellationTokenSource? _streamCts;
     private bool _isProcessing;
+    private TaskCompletionSource<bool>? _captureCompletion;
     private string _lastResponse = "";
 
     public MainWindow()
@@ -96,6 +117,22 @@ public sealed partial class MainWindow : Window
         _ner = new NerService();
         _windowMonitor = new ActiveWindowMonitor();
         _plugins = new PluginManager();
+        _searchSanitizer = new SearchQuerySanitizer(_redact, _customRedact, _ner);
+        _webSearch = new WebSearchService(_searchSanitizer);
+        // Web search OFF by default — user enables in Settings
+        _webSearch.OnSearchPerformed += query =>
+            DispatcherQueue.TryEnqueue(() =>
+                StatusLabel.Text = $"🌐 Searched: {query}");
+
+        // Voice + Assistant (disabled by default, user enables in Settings)
+        _voice = new VoiceService();
+        _assistant = new AssistantOrchestrator(_voice);
+        _assistant.StatusChanged += msg =>
+            DispatcherQueue.TryEnqueue(() => StatusLabel.Text = msg);
+        _assistant.ActionRequested += action =>
+            DispatcherQueue.TryEnqueue(() => HandleAssistantAction(action));
+        _assistant.SpeakRequested += async text => await SpeakTextAsync(text);
+
         _pipeline = new ScreenIntelPipeline(
             _ocr, _uiAutomation, _vision, _ner,
             _redact, _customRedact, _context);
@@ -140,6 +177,19 @@ public sealed partial class MainWindow : Window
         _ollama.Dispose();
         _ollamaRaw.Dispose();
         _capture.Dispose();
+        _webSearch.Dispose();
+        _voice.Dispose();
+        _ttsPlayer?.Dispose();
+    }
+
+    /// <summary>
+    /// Win32 window procedure subclass — intercepts WM_HOTKEY messages.
+    /// Without this, RegisterHotKey registers the key but messages never arrive.
+    /// </summary>
+    private IntPtr SubclassWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        _hotkey.ProcessMessage(msg, wParam);
+        return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
     }
 
     // ═══ STARTUP ═══════════════════════════════════════════════════
@@ -169,6 +219,15 @@ public sealed partial class MainWindow : Window
             ? "Press Ctrl+Shift+P from anywhere to capture"
             : "Hotkey registration failed — use the button";
 
+        // ✅ Install Win32 subclass proc to intercept WM_HOTKEY messages
+        // WinUI 3 doesn't expose WndProc — we subclass the window to receive hotkey messages
+        if (registered)
+        {
+            _wndProcDelegate = SubclassWndProc;
+            var newWndProc = Marshal.GetFunctionPointerForDelegate(_wndProcDelegate);
+            _originalWndProc = SetWindowLongPtr(hwnd, GWLP_WNDPROC, newWndProc);
+        }
+
         // 3. Detect hardware and connect to Ollama
         await ConnectOllamaAsync();
 
@@ -196,6 +255,82 @@ public sealed partial class MainWindow : Window
         // 6b. Start window monitor (provides active app context for captures)
         _windowMonitor.IsEnabled = true;
         _windowMonitor.Start();
+
+        // 6c. Proactive context engine (drives widget quick actions)
+        _proactiveContext = new ProactiveContextEngine(_windowMonitor);
+        _proactiveContext.ContextChanged += ctx =>
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                // Update compact widget with context-aware actions
+                _widget?.UpdateContext($"{ctx.Category}: {ctx.Label}", ctx.Actions);
+                _widget?.SetPrivacyStatus(true, _webSearch.IsEnabled);
+
+                // Show auto-suggestion if any
+                if (ctx.AutoSuggestion is not null)
+                    _widget?.SetStatus(ctx.AutoSuggestion);
+
+                // Sensitive app warning
+                if (ctx.SensitiveWarning)
+                    StatusLabel.Text = $"⚠ Sensitive app: {ctx.Label}";
+            });
+
+        // 6d. Launch compact floating widget
+        _widget = new CompactWidget();
+        _widget.CaptureRequested += () =>
+            DispatcherQueue.TryEnqueue(() => Capture_Click(this, new RoutedEventArgs()));
+        _widget.QuickActionClicked += prompt =>
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                if (_currentScreen is null)
+                {
+                    // Auto-capture first, then run the action
+                    Capture_Click(this, new RoutedEventArgs());
+                    // Wait for capture to actually complete (not arbitrary delay)
+                    if (_captureCompletion is not null)
+                        await _captureCompletion.Task;
+                }
+                if (_currentScreen is not null)
+                    await SendMessageAsync(prompt);
+            });
+        _widget.MessageSent += msg =>
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                _widget?.AddMessage(msg);
+                if (_currentScreen is not null)
+                    await SendMessageAsync(msg);
+                else
+                    _widget?.AddMessage("Capture a screen first (click 📷 or Ctrl+Shift+P)", true);
+            });
+        _widget.ExpandRequested += () =>
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                _tray.RestoreFromTray();
+            });
+        _widget.VoiceRequested += () =>
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                if (_voice.IsEnabled)
+                {
+                    _widget?.SetVoiceListening(true);
+                    var text = await _voice.ListenOnceAsync();
+                    _widget?.SetVoiceListening(false);
+                    if (text is not null)
+                    {
+                        _widget?.AddMessage($"🎤 {text}");
+                        var cmd = VoiceService.ParseCommand(text);
+                        if (cmd.Type != CommandType.Unknown)
+                            HandleAssistantAction(new AssistantAction { Command = cmd, Source = "voice" });
+                        else if (_currentScreen is not null)
+                            await SendMessageAsync(text);
+                    }
+                }
+                else
+                {
+                    _widget?.SetStatus("Voice disabled — enable in Settings");
+                }
+            });
+        _widget.Activate();
+
         _windowMonitor.WindowChanged += (title, process) =>
             DispatcherQueue.TryEnqueue(() =>
             {
@@ -348,13 +483,14 @@ public sealed partial class MainWindow : Window
     {
         if (_isProcessing) return;
         _isProcessing = true;
+        _captureCompletion = new TaskCompletionSource<bool>();
         CaptureBtn.IsEnabled = false;
 
         try
         {
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
             var (rawBitmap, item) = await _capture.CaptureAsync(hwnd);
-            if (rawBitmap is null) { _isProcessing = false; CaptureBtn.IsEnabled = true; return; }
+            if (rawBitmap is null) return; // finally block resets _isProcessing + signals _captureCompletion
 
             // ✅ Wrap bitmap IMMEDIATELY — no gap where it could leak
             using var safeBitmap = new MemorySafeBitmap(rawBitmap);
@@ -378,9 +514,7 @@ public sealed partial class MainWindow : Window
                 var warnResult = await warnDialog.ShowAsync();
                 if (warnResult != ContentDialogResult.Primary)
                 {
-                    // safeBitmap auto-disposed by using statement
-                    _isProcessing = false;
-                    CaptureBtn.IsEnabled = true;
+                    // safeBitmap auto-disposed by using statement, finally resets state
                     return;
                 }
             }
@@ -435,6 +569,23 @@ public sealed partial class MainWindow : Window
                 (intelResult.NerRedactionCount > 0 ? $"\nNER: {intelResult.NerRedactionCount} contextual items redacted" : ""),
                 ChatRole.System);
 
+            // ✅ Link safety warning — show BEFORE user clicks anything
+            if (intelResult.LinkSafety is not null && intelResult.LinkSafety.FlaggedLinks.Count > 0)
+            {
+                var linkSummary = LinkSafetyService.GetSummaryText(intelResult.LinkSafety);
+                AddChatBubble(linkSummary, ChatRole.System);
+
+                // Show details for dangerous links
+                foreach (var flagged in intelResult.LinkSafety.FlaggedLinks
+                    .Where(f => f.RiskLevel >= RiskLevel.High))
+                {
+                    var detail = $"🔗 {flagged.Url}\n" +
+                        string.Join("\n", flagged.Warnings.Select(w =>
+                            $"   {(w.Severity == RiskLevel.Critical ? "🚨" : "⚠️")} {w.Message}"));
+                    AddChatBubble(detail, ChatRole.System);
+                }
+            }
+
             StatusLabel.Text = "Ready";
             _privacyPulse.Refresh();
 
@@ -449,6 +600,7 @@ public sealed partial class MainWindow : Window
         {
             _isProcessing = false;
             CaptureBtn.IsEnabled = true;
+            _captureCompletion?.TrySetResult(_currentScreen is not null);
         }
     }
 
@@ -522,6 +674,24 @@ public sealed partial class MainWindow : Window
             };
             QuickActionsPanel.Children.Add(formBtn);
         }
+
+        // ✅ Search Web button (always visible, works even when search is disabled — opens browser)
+        var webBtn = new Button { Padding = new Thickness(10, 6, 10, 6) };
+        var webPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        webPanel.Children.Add(new FontIcon { Glyph = "\uE774", FontSize = 13 }); // Globe icon
+        webPanel.Children.Add(new TextBlock { Text = "Search web", FontSize = 12 });
+        webBtn.Content = webPanel;
+        webBtn.Click += (_, _) =>
+        {
+            if (_currentScreen is not null)
+            {
+                var query = _currentScreen.Type == ContextType.Error
+                    ? _currentScreen.RedactedOcr[..Math.Min(100, _currentScreen.RedactedOcr.Length)]
+                    : _currentScreen.Summary;
+                _webSearch.SearchInBrowser(query);
+            }
+        };
+        QuickActionsPanel.Children.Add(webBtn);
     }
 
     // ═══ CHAT (with history + clipboard integration) ═══════════════
@@ -541,6 +711,14 @@ public sealed partial class MainWindow : Window
     private async Task SendMessageAsync(string message)
     {
         if (_isProcessing || _currentScreen is null) return;
+
+        // ✅ Handle slash commands (/capture, /search, /help, etc.)
+        if (_assistant.TryProcessCommand(message))
+        {
+            InputBox.Text = "";
+            return;
+        }
+
         _isProcessing = true;
         SendBtn.IsEnabled = false;
         var userText = message;
@@ -556,6 +734,37 @@ public sealed partial class MainWindow : Window
             _guard.RecordLlmCall();
             var fullResponse = new System.Text.StringBuilder();
 
+            // ✅ Web search enrichment (if enabled)
+            if (_webSearch.IsEnabled)
+            {
+                StatusLabel.Text = "🌐 Searching for latest info…";
+                try
+                {
+                    // Ask LLM to generate a clean search query
+                    var searchPrompt = SearchQuerySanitizer.BuildSearchPrompt(
+                        userText, _currentScreen.Type.ToString());
+                    var searchQuery = await _ollama.ChatAsync(
+                        "Generate a web search query. Return ONLY the query, nothing else.",
+                        searchPrompt, _streamCts.Token);
+                    searchQuery = searchQuery.Trim().Trim('"').Trim('\'');
+
+                    if (searchQuery.Length > 3 && searchQuery.Length < 200)
+                    {
+                        var results = await _webSearch.SearchAsync(searchQuery, 3, _streamCts.Token);
+                        if (results.HasResults)
+                        {
+                            var searchContext = WebSearchService.BuildSearchContext(results);
+                            _chat.InjectSearchContext(searchContext);
+                            AddChatBubble($"🌐 Found {results.Results.Count} results for: {results.Query}" +
+                                (results.PiiStripped > 0 ? $" ({results.PiiStripped} PII items stripped from query)" : ""),
+                                ChatRole.System);
+                        }
+                    }
+                }
+                catch { /* Search failed — continue with local knowledge */ }
+                StatusLabel.Text = "Thinking…";
+            }
+
             await foreach (var chunk in _chat.SendStreamAsync(userText, _streamCts.Token))
             {
                 fullResponse.Append(chunk);
@@ -567,6 +776,13 @@ public sealed partial class MainWindow : Window
             PinBtn.IsEnabled = true;
             StatusLabel.Text = "Ready";
             _privacyPulse.Refresh();
+
+            // ✅ Mirror response summary to compact widget
+            var widgetSummary = _lastResponse.Length > 200
+                ? _lastResponse[..197] + "…"
+                : _lastResponse;
+            _widget?.AddMessage(widgetSummary, true);
+            _widget?.SetStatus("Ready");
 
             // ✅ Save to history
             _history.Save(new HistoryEntry
@@ -837,6 +1053,112 @@ public sealed partial class MainWindow : Window
     }
 
     // ✅ Settings (with consent revoke, data wipe, custom redaction, Ollama config)
+    // ═══ VOICE ASSISTANT ═══════════════════════════════════════════
+
+    /// <summary>
+    /// Handles actions dispatched by the AssistantOrchestrator.
+    /// Maps voice/typed commands to existing MainWindow methods.
+    /// </summary>
+    private async void HandleAssistantAction(AssistantAction action)
+    {
+        switch (action.Command?.Type)
+        {
+            case CommandType.CaptureScreen:
+                Capture_Click(this, new RoutedEventArgs());
+                break;
+
+            case CommandType.AskQuestion:
+                if (action.Command.Argument is not null && _currentScreen is not null)
+                    await SendMessageAsync(action.Command.Argument);
+                break;
+
+            case CommandType.WebSearch:
+                if (action.Command.Argument is not null)
+                {
+                    _webSearch.SearchInBrowser(action.Command.Argument);
+                }
+                break;
+
+            case CommandType.ReadResponse:
+                if (!string.IsNullOrEmpty(_lastResponse))
+                    await SpeakTextAsync(_lastResponse);
+                break;
+
+            case CommandType.OpenBrowser:
+                var url = "https://duckduckgo.com";
+                _webSearch.OpenInBrowser(url);
+                break;
+
+            case CommandType.CopyResponse:
+                if (!string.IsNullOrEmpty(_lastResponse))
+                {
+                    var dp = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                    dp.SetText(_lastResponse);
+                    Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp);
+                    StatusLabel.Text = "📋 Copied to clipboard";
+                }
+                break;
+
+            case CommandType.PasteNext:
+                var next = _clipboard.PasteNext();
+                if (next is not null)
+                {
+                    var dp2 = new Windows.ApplicationModel.DataTransfer.DataPackage();
+                    dp2.SetText(next.Text);
+                    Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(dp2);
+                    StatusLabel.Text = $"📋 Pasted block {_clipboard.Count + 1}";
+                }
+                break;
+
+            case CommandType.NewChat:
+                NewChat_Click(this, new RoutedEventArgs());
+                break;
+
+            case CommandType.Stop:
+                _streamCts?.Cancel();
+                break;
+
+            case CommandType.PrivacyStatus:
+                var report = _guard.GenerateReport();
+                var status = report.ToSummary();
+                AddChatBubble(status, ChatRole.System);
+                await SpeakTextAsync($"Privacy score is {report.PrivacyScore} out of 100. " +
+                    $"{report.TotalCaptures} captures this session. " +
+                    $"All data is local. {_webSearch.GetPrivacyStatus()}");
+                break;
+
+            case CommandType.SecurityCheck:
+                SecurityLab_Click(this, new RoutedEventArgs());
+                break;
+
+            case CommandType.OpenSettings:
+                Settings_Click(this, new RoutedEventArgs());
+                break;
+        }
+
+        action.Completed = true;
+    }
+
+    /// <summary>
+    /// Speaks text using Windows TTS. Plays audio through MediaPlayer.
+    /// </summary>
+    private Windows.Media.Playback.MediaPlayer? _ttsPlayer;
+    private async Task SpeakTextAsync(string text)
+    {
+        try
+        {
+            var stream = await _voice.SpeakAsync(text);
+            if (stream is not null)
+            {
+                _ttsPlayer?.Dispose();
+                _ttsPlayer = new Windows.Media.Playback.MediaPlayer();
+                _ttsPlayer.Source = Windows.Media.Core.MediaSource.CreateFromStream(stream, stream.ContentType);
+                _ttsPlayer.Play();
+            }
+        }
+        catch { /* TTS failed — silent fallback */ }
+    }
+
     private async void Settings_Click(object sender, RoutedEventArgs e)
     {
         var content = new StackPanel { Spacing = 16, MaxWidth = 500 };
@@ -859,6 +1181,87 @@ public sealed partial class MainWindow : Window
         {
             Text = $"Custom redaction rules: {_customRedact.Rules.Count} active",
             FontSize = 13, Foreground = new SolidColorBrush(Colors.Gray)
+        });
+
+        // ── Web Search Settings ──
+        content.Children.Add(new TextBlock
+        {
+            Text = "Online Search",
+            FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+
+        var searchToggle = new ToggleSwitch
+        {
+            Header = "Allow web search for recent information",
+            IsOn = _webSearch.IsEnabled,
+            OnContent = "ON — sanitized queries sent to DuckDuckGo",
+            OffContent = "OFF — fully offline (default)"
+        };
+        searchToggle.Toggled += (_, _) => _webSearch.IsEnabled = searchToggle.IsOn;
+        content.Children.Add(searchToggle);
+
+        content.Children.Add(new TextBlock
+        {
+            Text = "When enabled, PAiA can search the web for error fixes, documentation, and recent info.\n" +
+                   "Only sanitized search queries go online — screen content and PII never leave your machine.\n" +
+                   $"Searches this session: {_webSearch.GetStats().TotalSearches} | PII items stripped: {_webSearch.GetStats().TotalPiiItemsStripped}",
+            FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        // Browser picker
+        var browserPicker = new ComboBox
+        {
+            Header = "Preferred browser for opening links",
+            Width = 250,
+            ItemsSource = new[] { "System Default", "Chrome", "Edge", "Firefox", "Brave" },
+            SelectedIndex = (int)_webSearch.PreferredBrowser
+        };
+        browserPicker.SelectionChanged += (_, _) =>
+            _webSearch.PreferredBrowser = (BrowserPreference)browserPicker.SelectedIndex;
+        content.Children.Add(browserPicker);
+
+        // ── Voice Assistant Settings ──
+        content.Children.Add(new TextBlock
+        {
+            Text = "Voice Assistant",
+            FontSize = 15, FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 8, 0, 0)
+        });
+
+        var voiceToggle = new ToggleSwitch
+        {
+            Header = "Enable voice commands",
+            IsOn = _voice.IsEnabled,
+            OnContent = "ON — say 'Hey PAiA' or hold Ctrl+Shift+V",
+            OffContent = "OFF (default)"
+        };
+        voiceToggle.Toggled += async (_, _) =>
+        {
+            _voice.IsEnabled = voiceToggle.IsOn;
+            if (voiceToggle.IsOn) await _voice.InitializeAsync();
+        };
+        content.Children.Add(voiceToggle);
+
+        var voiceModePicker = new ComboBox
+        {
+            Header = "Voice mode",
+            Width = 250,
+            ItemsSource = new[] { "Push-to-Talk (Ctrl+Shift+V)", "Wake Word ('Hey PAiA')" },
+            SelectedIndex = (int)_voice.Mode
+        };
+        voiceModePicker.SelectionChanged += (_, _) =>
+            _voice.Mode = (VoiceMode)voiceModePicker.SelectedIndex;
+        content.Children.Add(voiceModePicker);
+
+        content.Children.Add(new TextBlock
+        {
+            Text = "Voice uses Windows Speech APIs — local, offline, no audio sent to cloud.\n" +
+                   "Push-to-Talk is more reliable. Wake Word listens continuously on-device.\n" +
+                   "Type /help in the input box for command list.",
+            FontSize = 12, Foreground = new SolidColorBrush(Colors.Gray),
+            TextWrapping = TextWrapping.Wrap
         });
 
         var dialog = new ContentDialog

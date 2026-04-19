@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download — PAiA</title>
+  <meta name="description" content="Download PAiA for Windows, macOS, and Linux.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta active">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 40px;">
+  <div class="container">
+    <h1 style="font-size: clamp(36px, 5vw, 52px);">Download PAiA</h1>
+    <p class="tagline">v0.3.0 · April 2026 · Free for personal use · 14-day Pro trial included</p>
+  </div>
+</header>
+
+<section style="padding-top: 0;">
+  <div class="container">
+    <div class="download-grid">
+
+      <div class="download-card">
+        <div class="download-os">⊞</div>
+        <div class="download-name">Windows</div>
+        <div class="download-meta">10 / 11 · x64 · ~150 MB</div>
+        <a href="https://github.com/REPLACE_ME/paia/releases/latest/download/PAiA-Setup-0.3.0.exe" class="btn btn-primary">Download .exe</a>
+      </div>
+
+      <div class="download-card">
+        <div class="download-os"></div>
+        <div class="download-name">macOS</div>
+        <div class="download-meta">12+ · Intel + Apple Silicon · ~160 MB</div>
+        <a href="https://github.com/REPLACE_ME/paia/releases/latest/download/PAiA-0.3.0-arm64.dmg" class="btn btn-primary">Download .dmg</a>
+      </div>
+
+      <div class="download-card">
+        <div class="download-os">🐧</div>
+        <div class="download-name">Linux</div>
+        <div class="download-meta">x64 · AppImage / .deb · ~155 MB</div>
+        <a href="https://github.com/REPLACE_ME/paia/releases/latest/download/PAiA-0.3.0-x64.AppImage" class="btn btn-primary">Download AppImage</a>
+      </div>
+
+    </div>
+
+    <p style="text-align: center; margin-top: 32px; color: var(--text3); font-size: 13px;">
+      Looking for older versions or other architectures?
+      <a href="https://github.com/REPLACE_ME/paia/releases">Browse all releases on GitHub</a>.
+    </p>
+  </div>
+</section>
+
+<section style="background: var(--bg2);">
+  <div class="container-sm">
+    <h2 class="section-title" style="font-size: 28px;">After install</h2>
+
+    <h3 style="font-size: 18px; margin-top: 32px; margin-bottom: 8px;">1. Install Ollama</h3>
+    <p>PAiA needs <a href="https://ollama.com" target="_blank">Ollama</a> running locally to run language models. Grab it from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a> and start it.</p>
+
+    <h3 style="font-size: 18px; margin-top: 24px; margin-bottom: 8px;">2. Pull a model</h3>
+    <p>The first-run wizard offers to do this for you with one click. Or do it manually:</p>
+    <pre><code>ollama pull llama3.2</code></pre>
+    <p>For RAG support also pull an embedding model:</p>
+    <pre><code>ollama pull nomic-embed-text</code></pre>
+    <p>For vision support pull a multimodal model:</p>
+    <pre><code>ollama pull llava</code></pre>
+
+    <h3 style="font-size: 18px; margin-top: 24px; margin-bottom: 8px;">3. Click the ball</h3>
+    <p>A small glowing ball will appear in your screen corner. Click it to start chatting. Drag it anywhere — its position is remembered.</p>
+
+    <h3 style="font-size: 18px; margin-top: 24px; margin-bottom: 8px;">Default global hotkeys</h3>
+    <table>
+      <tbody>
+        <tr><td><code>Ctrl+Alt+P</code></td><td>Show / hide PAiA</td></tr>
+        <tr><td><code>Ctrl+Alt+S</code></td><td>Capture screen</td></tr>
+        <tr><td><code>Ctrl+Alt+V</code></td><td>Push to talk</td></tr>
+        <tr><td><code>Ctrl+Alt+Q</code></td><td>Quick actions on copied text</td></tr>
+      </tbody>
+    </table>
+    <p>All hotkeys are rebindable in Settings → Hotkeys.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/privacy.html">Privacy policy</a>
+      <a href="mailto:hello@paia.local">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="/docs.html">Documentation</a>
+      <a href="/docs.html#faq">FAQ</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

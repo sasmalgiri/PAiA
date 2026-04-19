@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Security + responsible disclosure — PAiA</title>
+  <meta name="description" content="How PAiA is built to be secure, and how to report a vulnerability responsibly.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/security.html" class="active">Security</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 30px;">
+  <div class="container">
+    <h1 style="font-size: clamp(28px, 4vw, 40px);">Security + responsible disclosure</h1>
+    <p class="tagline">How PAiA is built to be secure, and how to report something if it isn't.</p>
+  </div>
+</header>
+
+<section>
+  <div class="container-sm legal-body">
+    <h2>How PAiA is built</h2>
+    <ul>
+      <li><strong>Local by default.</strong> The app's core loop runs entirely on your machine.
+      Nothing leaves your device unless a specific opt-in feature is configured.</li>
+      <li><strong>PII redaction pipeline.</strong> 11 categories of personally-identifiable
+      information are scrubbed before any prompt leaves the renderer.</li>
+      <li><strong>End-to-end encryption for sync.</strong> AES-256-GCM per object, PBKDF2-SHA-256
+      with 200,000 iterations from your passphrase. Storage operators see counts and sizes,
+      not contents.</li>
+      <li><strong>Ed25519 signatures.</strong> Licenses, beta invites, and trial extensions are
+      signed and verified offline with an embedded public key.</li>
+      <li><strong>Renderer isolation.</strong> Strict Content-Security-Policy. No inline scripts.
+      Context isolation and a narrow contextBridge API. Sandboxed iframe for Canvas HTML/SVG.</li>
+      <li><strong>Plugins run with full Node capabilities.</strong> Plugins are a trust surface;
+      they're opt-in, scanned before load, and their declared <code>contributes</code> block is
+      shown to the user for audit before enabling.</li>
+      <li><strong>Signed installers on macOS + Windows</strong> (once certs are active — see our
+      <a href="/changelog.html">changelog</a> for the first signed build date).</li>
+      <li><strong>Permission model for OS-level enforcement.</strong> Every firewall / hosts /
+      registry modification requires an admin prompt from the OS; PAiA never inherits elevation.</li>
+    </ul>
+
+    <h2>Reporting a vulnerability</h2>
+
+    <p>Email <a href="mailto:security@paia.app">security@paia.app</a>. PGP available at
+    <a href="/pgp.asc">paia.app/pgp.asc</a> — please encrypt anything that includes a working
+    exploit.</p>
+
+    <p><strong>Please include:</strong></p>
+    <ul>
+      <li>PAiA version (Settings → About).</li>
+      <li>Your OS + architecture.</li>
+      <li>A clear description + reproduction steps + a proof of concept.</li>
+      <li>Your handle if you'd like credit in the release notes.</li>
+    </ul>
+
+    <p>We will acknowledge within <strong>3 business days</strong> and give you a progress update
+    within <strong>10 business days</strong>. Most fixes ship within <strong>30 days</strong> for
+    critical issues, <strong>60 days</strong> otherwise.</p>
+
+    <h2>In scope</h2>
+    <ul>
+      <li>The PAiA desktop application on any platform.</li>
+      <li>The license issuance and activation flow.</li>
+      <li>The Companion LAN HTTP server.</li>
+      <li>The local REST API server.</li>
+      <li>The classroom server + enforcement scripts.</li>
+      <li>The E2E-encrypted sync protocol.</li>
+      <li>The agent orchestrator and the Plugin SDK sandbox.</li>
+    </ul>
+
+    <h2>Out of scope</h2>
+    <ul>
+      <li>Vulnerabilities in third-party LLM providers (report to them).</li>
+      <li>Vulnerabilities in Electron / Chromium itself (report upstream first).</li>
+      <li>Self-XSS that requires the user to paste malicious content into their own chat input.</li>
+      <li>Denial of service via very large prompts, mic capture, or infinitely-looping agent goals.</li>
+      <li>Social engineering of our support staff.</li>
+    </ul>
+
+    <h2>Safe harbor</h2>
+    <p>We will not pursue legal action against researchers who:</p>
+    <ul>
+      <li>Make a good-faith effort to comply with this policy.</li>
+      <li>Avoid privacy violations, data destruction, and service interruption during testing.</li>
+      <li>Only interact with accounts they own or have explicit permission to test.</li>
+      <li>Give us reasonable time (90 days by default) to fix before public disclosure.</li>
+    </ul>
+
+    <h2>Rewards</h2>
+    <p>We aren't running a public bug-bounty programme yet. For notable findings we may offer
+    swag and — for the worst issues — a discretionary reward at USD 100–1000 depending on
+    severity, novelty, and report quality. Ask before testing anything you'd expect a reward for.</p>
+
+    <h2>Thanks</h2>
+    <p>This has to be a template, but your inbox is not. We really appreciate the research
+    community.</p>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/download.html">Download</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/subprocessors.html">Subprocessors</a>
+      <a href="/security.html">Security</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="mailto:hello@paia.app">Contact</a>
+      <a href="/status.html">Status</a>
+    </div>
+  </div>
+  <div class="footer-copy">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

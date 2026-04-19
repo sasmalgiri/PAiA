@@ -105,24 +105,25 @@ public sealed class RedactionDiffView
         };
     }
 
+    private static readonly (Regex pattern, string type)[] PiiPatterns =
+    [
+        (new Regex(@"\b(?:\d[ -]*?){13,19}\b", RegexOptions.Compiled), "CARD"),
+        (new Regex(@"\b\d{3}-\d{2}-\d{4}\b", RegexOptions.Compiled), "SSN"),
+        (new Regex(@"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b", RegexOptions.Compiled), "EMAIL"),
+        (new Regex(@"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", RegexOptions.Compiled), "PHONE"),
+        (new Regex(@"\b(?:\d{1,3}\.){3}\d{1,3}\b", RegexOptions.Compiled), "IP"),
+        (new Regex(@"\bAKIA[0-9A-Z]{16}\b", RegexOptions.Compiled), "AWS-KEY"),
+        (new Regex(@"\bgh[ps]_[A-Za-z0-9_]{36,255}\b", RegexOptions.Compiled), "GITHUB-TOKEN"),
+        (new Regex(@"\beyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.+/=]+\b", RegexOptions.Compiled), "JWT"),
+    ];
+
     private static List<(int start, int end, string type)> FindPiiMatches(string text)
     {
         var matches = new List<(int start, int end, string type)>();
-        var patterns = new (string pattern, string type)[]
-        {
-            (@"\b(?:\d[ -]*?){13,19}\b", "CARD"),
-            (@"\b\d{3}-\d{2}-\d{4}\b", "SSN"),
-            (@"\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b", "EMAIL"),
-            (@"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b", "PHONE"),
-            (@"\b(?:\d{1,3}\.){3}\d{1,3}\b", "IP"),
-            (@"\bAKIA[0-9A-Z]{16}\b", "AWS-KEY"),
-            (@"\bgh[ps]_[A-Za-z0-9_]{36,255}\b", "GITHUB-TOKEN"),
-            (@"\beyJ[A-Za-z0-9\-_]+\.eyJ[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_.+/=]+\b", "JWT"),
-        };
 
-        foreach (var (pattern, type) in patterns)
+        foreach (var (pattern, type) in PiiPatterns)
         {
-            foreach (Match m in Regex.Matches(text, pattern))
+            foreach (Match m in pattern.Matches(text))
             {
                 // Avoid overlapping matches
                 bool overlaps = matches.Any(existing =>

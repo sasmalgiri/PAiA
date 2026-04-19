@@ -34,7 +34,7 @@ public sealed class SecureOllamaClient : ILlmClient, IDisposable
 
         // Validate endpoint on construction
         if (!_guard.IsAllowedEndpoint(_inner.BaseUrl))
-            throw new SecurityException(
+            throw new PrivacyViolationException(
                 $"PAiA privacy violation: Ollama endpoint '{_inner.BaseUrl}' is not localhost. " +
                 "PAiA only communicates with local Ollama instances.");
     }
@@ -97,7 +97,7 @@ public sealed class SecureOllamaClient : ILlmClient, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!_guard.IsAllowedEndpoint(_inner.BaseUrl))
-            throw new SecurityException(
+            throw new PrivacyViolationException(
                 "PAiA privacy violation: Ollama endpoint is not on localhost.");
     }
 
@@ -112,7 +112,7 @@ public sealed class SecureOllamaClient : ILlmClient, IDisposable
 /// <summary>
 /// Thrown when a privacy guarantee would be violated.
 /// </summary>
-public class SecurityException : Exception
+public class PrivacyViolationException : Exception
 {
-    public SecurityException(string message) : base(message) { }
+    public PrivacyViolationException(string message) : base(message) { }
 }

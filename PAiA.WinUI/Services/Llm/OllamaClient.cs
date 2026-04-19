@@ -12,7 +12,7 @@ public sealed class OllamaClient : ILlmClient, IDisposable
     private readonly HttpClient _http;
     private bool _disposed;
 
-    public string BaseUrl { get; set; } = "http://localhost:11434";
+    public string BaseUrl { get; } = "http://localhost:11434";
     public string Model { get; set; } = "llama3.2:latest";
 
     public OllamaClient()

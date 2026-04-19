@@ -16,6 +16,7 @@ public sealed partial class FormHelperOverlay : Window
     private readonly string _redactedOcr;
     private List<FormField> _fields = [];
     private int _copiedCount;
+    private bool _analyzed;
 
     public FormHelperOverlay(FormAnalysisService formAnalysis, AuditLogService audit, string redactedOcrText)
     {
@@ -27,7 +28,12 @@ public sealed partial class FormHelperOverlay : Window
         if (AppWindow is not null)
             AppWindow.Resize(new Windows.Graphics.SizeInt32(420, 600));
 
-        Activated += async (_, _) => await AnalyzeAsync();
+        Activated += async (_, _) =>
+        {
+            if (_analyzed) return;
+            _analyzed = true;
+            await AnalyzeAsync();
+        };
     }
 
     private async Task AnalyzeAsync()
@@ -96,10 +102,9 @@ public sealed partial class FormHelperOverlay : Window
         }
 
         // Suggestion row with copy button
-        var suggestionGrid = new Grid
-        {
-            ColumnDefinitions = { new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }, new ColumnDefinition { Width = GridLength.Auto } }
-        };
+        var suggestionGrid = new Grid();
+        suggestionGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        suggestionGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var suggestionText = new TextBlock
         {

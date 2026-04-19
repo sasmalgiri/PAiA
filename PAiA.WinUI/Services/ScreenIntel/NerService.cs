@@ -25,6 +25,20 @@ public sealed class NerService
     private static readonly string[] NamePrefixes =
         ["Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "Sir", "Madam"];
 
+    // Pre-compiled name prefix patterns
+    private static readonly Regex[] NamePrefixRegexes = NamePrefixes
+        .Select(p => new Regex($@"\b{Regex.Escape(p)}\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){{1,3}})", RegexOptions.Compiled))
+        .ToArray();
+    private static readonly Regex AddressRegex = new(
+        @"\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St|Ave|Blvd|Dr|Ln|Rd|Ct|Way|Pl|Cir)\.?\b",
+        RegexOptions.Compiled);
+    private static readonly Regex CurrencyRegex = new(
+        @"[\$€£₹¥]\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?\b(?:\s*(?:/\s*(?:year|month|hr|hour|week|day)|per\s+(?:year|month|hour|day|annum)))?",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex DobRegex = new(
+        @"\b(?:0[1-9]|1[0-2])[/-](?:0[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b",
+        RegexOptions.Compiled);
+
     // Contextual keywords that indicate PII follows
     private static readonly (string keyword, string entityType)[] ContextualPatterns =
     [
@@ -103,10 +117,9 @@ public sealed class NerService
         }
 
         // Detect names with titles (Mr. John Smith)
-        foreach (var prefix in NamePrefixes)
+        foreach (var nameRegex in NamePrefixRegexes)
         {
-            var pattern = $@"\b{Regex.Escape(prefix)}\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){{1,3}})";
-            foreach (Match m in Regex.Matches(text, pattern))
+            foreach (Match m in nameRegex.Matches(text))
             {
                 entities.Add(new NerEntity
                 {
@@ -121,8 +134,7 @@ public sealed class NerService
         }
 
         // Detect US street addresses
-        var addressPattern = @"\b\d{1,5}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St|Ave|Blvd|Dr|Ln|Rd|Ct|Way|Pl|Cir)\.?\b";
-        foreach (Match m in Regex.Matches(text, addressPattern))
+        foreach (Match m in AddressRegex.Matches(text))
         {
             entities.Add(new NerEntity
             {
@@ -136,8 +148,7 @@ public sealed class NerService
         }
 
         // Detect currency amounts in context
-        var currencyPattern = @"[\$€£₹¥]\s*\d{1,3}(?:,\d{3})*(?:\.\d{2})?\b(?:\s*(?:/\s*(?:year|month|hr|hour|week|day)|per\s+(?:year|month|hour|day|annum)))?";
-        foreach (Match m in Regex.Matches(text, currencyPattern, RegexOptions.IgnoreCase))
+        foreach (Match m in CurrencyRegex.Matches(text))
         {
             entities.Add(new NerEntity
             {
@@ -151,8 +162,7 @@ public sealed class NerService
         }
 
         // Detect dates of birth patterns
-        var dobPattern = @"\b(?:0[1-9]|1[0-2])[/-](?:0[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b";
-        foreach (Match m in Regex.Matches(text, dobPattern))
+        foreach (Match m in DobRegex.Matches(text))
         {
             entities.Add(new NerEntity
             {
@@ -175,7 +185,7 @@ public sealed class NerService
     /// </summary>
     public string RedactEntities(string text, List<NerEntity> entities, double minConfidence = 0.6)
     {
-        if (entities.Count == 0) return text;
+        if (string.IsNullOrEmpty(text) || entities.Count == 0) return text ?? "";
 
         // Sort by position descending (so replacements don't shift indices)
         var toRedact = entities

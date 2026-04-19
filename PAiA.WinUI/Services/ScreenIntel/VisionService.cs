@@ -145,23 +145,32 @@ public sealed class VisionService
             var encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.JpegEncoderId, stream);
 
             // Ensure correct pixel format
-            var convertedBitmap = bitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8
+            var needsConversion = bitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8;
+            var convertedBitmap = needsConversion
                 ? SoftwareBitmap.Convert(bitmap, BitmapPixelFormat.Bgra8)
                 : bitmap;
 
-            encoder.SetSoftwareBitmap(convertedBitmap);
-            encoder.BitmapTransform.ScaledWidth = (uint)Math.Min(1920, bitmap.PixelWidth);
-            encoder.BitmapTransform.ScaledHeight = (uint)Math.Min(1080, bitmap.PixelHeight);
-            encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
+            try
+            {
+                encoder.SetSoftwareBitmap(convertedBitmap);
+                encoder.BitmapTransform.ScaledWidth = (uint)Math.Min(1920, bitmap.PixelWidth);
+                encoder.BitmapTransform.ScaledHeight = (uint)Math.Min(1080, bitmap.PixelHeight);
+                encoder.BitmapTransform.InterpolationMode = BitmapInterpolationMode.Linear;
 
-            await encoder.FlushAsync();
+                await encoder.FlushAsync();
 
-            var bytes = new byte[stream.Size];
-            var reader = new DataReader(stream.GetInputStreamAt(0));
-            await reader.LoadAsync((uint)stream.Size);
-            reader.ReadBytes(bytes);
+                var bytes = new byte[stream.Size];
+                var reader = new DataReader(stream.GetInputStreamAt(0));
+                await reader.LoadAsync((uint)stream.Size);
+                reader.ReadBytes(bytes);
 
-            return Convert.ToBase64String(bytes);
+                return Convert.ToBase64String(bytes);
+            }
+            finally
+            {
+                // Dispose the converted bitmap ONLY if we created it (not the original)
+                if (needsConversion) convertedBitmap.Dispose();
+            }
         }
         catch
         {

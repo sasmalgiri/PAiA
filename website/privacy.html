@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy — PAiA</title>
+  <meta name="description" content="PAiA collects nothing by default. Your conversations, voice, screen, and documents stay on your machine.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/privacy.html" class="active">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-sm doc-content">
+
+<h1>Privacy policy</h1>
+<p style="color: var(--text3); font-size: 13px;">Last updated: April 9, 2026</p>
+
+<p>This is the human version. We are not lawyers. <strong>The short answer: PAiA collects nothing by default.</strong></p>
+
+<h2 id="data-handling">Where your data lives</h2>
+<p>PAiA is a desktop application. Your conversations, voice recordings, screen captures, and uploaded documents are processed entirely on your computer. They are stored in a local database file in your user data folder. They are not transmitted to PAiA's servers because PAiA has no servers for that.</p>
+
+<table>
+  <thead>
+    <tr><th>What</th><th>Where it lives</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Chat history</td><td>SQLite file in your local user data folder</td></tr>
+    <tr><td>Knowledge collections (RAG)</td><td>SQLite + local cache files</td></tr>
+    <tr><td>Voice recordings</td><td>Never stored — processed in memory and discarded</td></tr>
+    <tr><td>Screen captures</td><td>Attached to chat messages, stored only in your local chat history</td></tr>
+    <tr><td>Custom personas</td><td>JSON file in user data folder</td></tr>
+    <tr><td>Settings</td><td>JSON file in user data folder</td></tr>
+    <tr><td>License key</td><td>JSON file in user data folder</td></tr>
+  </tbody>
+</table>
+
+<h2>Network connections PAiA may make</h2>
+<p>By default, the only outbound connection PAiA makes is to your local Ollama daemon at <code>http://127.0.0.1:11434</code>. That's the loopback interface — the data never leaves your machine.</p>
+
+<p>The following are <strong>optional</strong> connections, each gated by a setting that defaults to off, or by an action you take:</p>
+
+<ul>
+  <li><strong>Hugging Face CDN</strong> — to download the Whisper speech recognition model on first use, if you select the Whisper STT engine. One-time, ~75 MB. Then never again.</li>
+  <li><strong>Tesseract OCR data CDN</strong> — to download language model files on first use, if you use screen capture OCR. One-time, ~10 MB per language.</li>
+  <li><strong>GitHub releases</strong> — for auto-update checks, only if auto-update is enabled in Settings → General. Disable it any time.</li>
+  <li><strong>Piper TTS releases + Hugging Face CDN</strong> — to download the Piper binary and voice models, if you switch the TTS engine to Piper. One-time per voice, ~70 MB each.</li>
+  <li><strong>DuckDuckGo HTML</strong> — only when you explicitly run <code>/search</code>. Your query is PII-redacted before being sent.</li>
+  <li><strong>Cloud LLM providers</strong> (OpenAI, Anthropic, OpenAI-compatible) — only if you flip the "Allow cloud models" toggle in Settings → General <em>and</em> configure a provider with an API key. Their privacy policies apply to those requests.</li>
+  <li><strong>MCP tool servers</strong> — only if you configure one. They run as child processes on your machine and may make network calls of their own depending on what they do. Every tool call requires your explicit approval.</li>
+  <li><strong>License webhook (one-time)</strong> — when you buy Pro, our payment processor (Stripe or LemonSqueezy) handles the transaction. We get an email address and an order ID; we send you an email with your license key. After that, all license verification happens offline.</li>
+  <li><strong>Crash reports + analytics</strong> — strictly opt-in (Settings → Privacy). Off by default. When enabled, you supply the destination URL — we don't bake in a default.</li>
+</ul>
+
+<h2>What we never collect</h2>
+<ul>
+  <li>Your chat content</li>
+  <li>Your voice recordings</li>
+  <li>Your screen captures</li>
+  <li>Your knowledge base contents</li>
+  <li>Your filenames or file contents</li>
+  <li>Your machine identifier, MAC address, or fingerprint</li>
+  <li>Your IP address (we never see it because we don't have servers that receive your data)</li>
+</ul>
+<p>Even when you opt in to crash reports, we strip every error message and breadcrumb through the same PII redactor the chat path uses, and we drop fields like <code>user</code>, <code>server_name</code>, and console breadcrumbs that could leak prompt content.</p>
+
+<h2>PII redaction</h2>
+<p>PAiA detects and redacts 11 categories of personally-identifiable info <em>before</em> any prompt leaves the renderer process:</p>
+<ul>
+  <li>Credit card numbers</li>
+  <li>U.S. Social Security numbers</li>
+  <li>Email addresses</li>
+  <li>Phone numbers</li>
+  <li>IP addresses</li>
+  <li>AWS access keys</li>
+  <li>GitHub tokens</li>
+  <li>Generic API keys</li>
+  <li>JWT tokens</li>
+  <li>Private keys (RSA, EC, DSA)</li>
+  <li>Database connection strings with embedded passwords</li>
+</ul>
+<p>This applies to chat messages, web search queries, screen OCR text, and crash reports.</p>
+
+<h2>Cookies and trackers</h2>
+<p>This website uses no cookies, no analytics, no fingerprinting, and no third-party scripts. We host fonts on Google Fonts, which sets a single CDN cache. If you don't want even that, configure your browser to block third-party fonts.</p>
+
+<h2>Children</h2>
+<p>PAiA is not directed at children under 13. We do not knowingly collect information from children — we don't knowingly collect information from anyone.</p>
+
+<h2>Changes to this policy</h2>
+<p>If we change this policy in any meaningful way, we will note it in the <a href="/changelog.html">changelog</a> and update the "Last updated" date at the top of this page. We will not start collecting data we don't currently collect without giving notice and a clear opt-out.</p>
+
+<h2>Contact</h2>
+<p>Questions about privacy go to <a href="mailto:hello@paia.local">hello@paia.local</a>.</p>
+
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/privacy.html">Privacy policy</a>
+      <a href="mailto:hello@paia.local">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="/docs.html">Documentation</a>
+      <a href="/docs.html#faq">FAQ</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Disallow: /legal/
+
+# Be friendly to the major AI crawlers. If a user's assistant is looking
+# at our site on their behalf, we WANT it to understand the product.
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://paia.app/sitemap.xml

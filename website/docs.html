@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation — PAiA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-sm doc-content">
+
+<h1>Documentation</h1>
+
+<h2 id="getting-started">Getting started</h2>
+<ol>
+  <li><strong>Install Ollama</strong> from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a> and start it.</li>
+  <li><strong>Pull a model:</strong> <code>ollama pull llama3.2</code></li>
+  <li><strong>Download PAiA</strong> from the <a href="/download.html">download page</a>.</li>
+  <li><strong>Run the installer.</strong> First launch shows a 3-step welcome wizard.</li>
+  <li><strong>Click the ball</strong> in your screen corner. Type a message or hit the mic.</li>
+</ol>
+
+<h2 id="hotkeys">Default hotkeys</h2>
+<table>
+  <thead><tr><th>Key</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>Ctrl+Alt+P</code></td><td>Show / hide the ball</td></tr>
+    <tr><td><code>Ctrl+Alt+S</code></td><td>Capture screen + ask "what's on my screen?"</td></tr>
+    <tr><td><code>Ctrl+Alt+V</code></td><td>Push to talk</td></tr>
+    <tr><td><code>Ctrl+Alt+Q</code></td><td>Quick actions on copied text</td></tr>
+  </tbody>
+</table>
+<p>All four are rebindable in Settings → Hotkeys.</p>
+
+<h2 id="slash-commands">Slash commands</h2>
+<table>
+  <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>/summarize &lt;text&gt;</code></td><td>3–5 bullet summary</td></tr>
+    <tr><td><code>/translate &lt;target&gt; | &lt;text&gt;</code></td><td>Translate to a target language</td></tr>
+    <tr><td><code>/explain &lt;text&gt;</code></td><td>Explain like I'm smart but unfamiliar</td></tr>
+    <tr><td><code>/fix &lt;text&gt;</code></td><td>Fix grammar/spelling, preserve meaning</td></tr>
+    <tr><td><code>/shorten &lt;text&gt;</code></td><td>Make it shorter</td></tr>
+    <tr><td><code>/expand &lt;text&gt;</code></td><td>Make it longer with structure</td></tr>
+    <tr><td><code>/code &lt;description&gt;</code></td><td>Generate code from a description</td></tr>
+    <tr><td><code>/tone &lt;tone&gt; | &lt;text&gt;</code></td><td>Rewrite in a different tone</td></tr>
+    <tr><td><code>/screen</code></td><td>Capture full screen + OCR + ask</td></tr>
+    <tr><td><code>/region</code></td><td>Drag-select a region + OCR + ask</td></tr>
+    <tr><td><code>/image</code></td><td>Paste an image from clipboard</td></tr>
+    <tr><td><code>/search &lt;query&gt;</code></td><td>Web search with redaction</td></tr>
+    <tr><td><code>/new</code></td><td>Start a new conversation</td></tr>
+    <tr><td><code>/clear</code></td><td>Delete the current conversation</td></tr>
+  </tbody>
+</table>
+
+<h2 id="rag">Knowledge collections (RAG)</h2>
+<p>RAG lets PAiA answer questions using documents you provide. To set it up:</p>
+<ol>
+  <li>Pull an embedding model: <code>ollama pull nomic-embed-text</code></li>
+  <li>Open Settings → Knowledge → Create collection</li>
+  <li>Drop in PDFs, Markdown, JSON, CSV, code, or any text file</li>
+  <li>Wait for chunking + embedding (a few seconds per document)</li>
+  <li>In the chat panel, click the 📚 button to attach the collection to a thread</li>
+  <li>Ask questions — PAiA retrieves the top-5 chunks and cites them as <code>[1]</code>, <code>[2]</code>…</li>
+</ol>
+
+<h2 id="vision">Vision models</h2>
+<p>PAiA supports any vision model Ollama supports. To use:</p>
+<ol>
+  <li>Pull a vision model: <code>ollama pull llava</code> (or bakllava, moondream, llama3.2-vision, etc.)</li>
+  <li>Switch to the vision model in the chat panel header dropdown</li>
+  <li>Drag an image into the composer, paste from clipboard with Ctrl+V, or use <code>/image</code></li>
+  <li>Ask your question</li>
+</ol>
+<p>If you attach an image while a non-vision model is selected, PAiA shows a yellow warning banner so you don't waste a roundtrip.</p>
+
+<h2 id="mcp">MCP tool servers</h2>
+<p>PAiA is a Model Context Protocol client. Any MCP server you can run as a child process can be added under Settings → Tools.</p>
+<p>Example: the official filesystem MCP server gives PAiA read/write access to a folder you choose.</p>
+<pre><code>Settings → Tools → Add MCP server
+  Name:    filesystem
+  Command: npx
+  Args:    -y @modelcontextprotocol/server-filesystem /path/to/folder</code></pre>
+<p>By default, every tool call requires explicit approval through a modal. You can whitelist trusted tools per-server under "Auto-approve tools".</p>
+
+<h2 id="cloud-models">Cloud models (opt-in)</h2>
+<p>PAiA's privacy guarantees only hold for local models. To use OpenAI / Anthropic / OpenAI-compatible providers:</p>
+<ol>
+  <li>Settings → General → Allow cloud models (turn on)</li>
+  <li>Settings → Models → Cloud providers → enable a provider → paste your API key</li>
+  <li>Pick the cloud model from the chat panel header dropdown (cloud models are prefixed with ☁)</li>
+</ol>
+
+<h2 id="license">Activating a license</h2>
+<ol>
+  <li>Buy Pro from the <a href="/pricing.html">pricing page</a></li>
+  <li>You'll receive an email with a JSON license blob</li>
+  <li>Settings → License → Activate</li>
+  <li>Paste the entire JSON block</li>
+</ol>
+<p>Verification is offline — Ed25519 signature checks happen on your machine. No phone-home.</p>
+
+<h2 id="faq">FAQ</h2>
+
+<h3>Where is my data?</h3>
+<p>In your OS user data folder. On Windows: <code>%APPDATA%/paia</code>. On macOS: <code>~/Library/Application Support/paia</code>. On Linux: <code>~/.config/paia</code>.</p>
+
+<h3>Can I export my chat history?</h3>
+<p>The database is plain SQLite. You can copy <code>paia.sqlite</code> from your user data folder and open it with any SQLite tool.</p>
+
+<h3>How do I reset everything?</h3>
+<p>Quit PAiA, delete the user data folder, relaunch. You'll see the onboarding wizard again.</p>
+
+<h3>What models work best?</h3>
+<p>For chat: <code>llama3.2</code>, <code>qwen2.5</code>, <code>mistral</code>. For RAG embeddings: <code>nomic-embed-text</code>. For vision: <code>llava</code>, <code>bakllava</code>, <code>moondream</code>. For code: <code>deepseek-coder-v2</code>, <code>qwen2.5-coder</code>.</p>
+
+<h3>How much disk space does PAiA itself use?</h3>
+<p>The installer is ~150 MB. The user data folder grows with your chat history (a few MB) and any cached models (Whisper STT ~75 MB, Tesseract OCR ~10 MB per language, Piper TTS ~70 MB per voice). Ollama models themselves live in Ollama's data directory, separate from PAiA.</p>
+
+<h3>Does PAiA work on Wayland Linux?</h3>
+<p>Mostly yes. Active-window detection works on GNOME (with the <code>window-calls</code> extension), KDE Plasma, and Hyprland. X11 is fully supported via xdotool.</p>
+
+<h3>Can I run my own LLM provider?</h3>
+<p>Yes — use the OpenAI-compatible provider with the base URL of any OpenAI-compatible server: LM Studio, vLLM, Together, OpenRouter, Groq, Cerebras, you name it.</p>
+
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/privacy.html">Privacy policy</a>
+      <a href="mailto:hello@paia.local">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="/docs.html">Documentation</a>
+      <a href="/docs.html#faq">FAQ</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

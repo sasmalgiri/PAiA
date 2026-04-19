@@ -1,8 +1,8 @@
 using PAiA.WinUI.Models;
 using PAiA.WinUI.Services.Context;
 using PAiA.WinUI.Services.Ocr;
-using PAiA.WinUI.Services.Privacy;
 using PAiA.WinUI.Services.Redaction;
+using PAiA.WinUI.Services.Safety;
 using Windows.Graphics.Imaging;
 
 namespace PAiA.WinUI.Services.ScreenIntel;
@@ -75,12 +75,8 @@ public sealed class ScreenIntelPipeline
         // ═══ Run signals in parallel where possible ═══
 
         // Signal 1: OCR (always runs — universal fallback)
-        Task<string> ocrTask;
-        using (var safeBitmap = new MemorySafeBitmap(bitmap))
-        {
-            ocrTask = _ocr.ExtractTextAsync(safeBitmap.Bitmap);
-            result.RawOcrText = await ocrTask;
-        }
+        // NOTE: bitmap lifecycle managed by caller (MainWindow) — do NOT wrap again
+        result.RawOcrText = await _ocr.ExtractTextAsync(bitmap);
         result.Signals.Add("OCR", !string.IsNullOrEmpty(result.RawOcrText));
 
         // Signal 2: UI Automation (parallel — structured data)
@@ -137,6 +133,10 @@ public sealed class ScreenIntelPipeline
         result.NerRedactionCount = nerResults.Count(e => e.IsRedacted);
 
         result.TotalRedactionCount = result.RegexRedactionCount + result.NerRedactionCount;
+
+        // ═══ Link Safety Scan (runs on raw text to catch URLs) ═══
+        var linkScanner = new Safety.LinkSafetyService();
+        result.LinkSafety = linkScanner.AnalyzeText(result.RawOcrText);
 
         // ═══ Smart context detection (uses all signals) ═══
         result.Context = DetectContextFromAllSignals(result);
@@ -250,6 +250,9 @@ public sealed class ScreenIntelResult
     // Context
     public ScreenContext? Context { get; set; }
 
+    // Link safety
+    public LinkSafetyReport? LinkSafety { get; set; }
+
     public string GetSignalSummary()
     {
         var active = Signals.Where(s => s.Value).Select(s => s.Key);
@@ -311,24 +314,11 @@ public sealed class ActiveWindowInfo
 
     private static string? ExtractBrowserUrl(IntPtr hwnd)
     {
-        try
-        {
-            var element = System.Windows.Automation.AutomationElement.FromHandle(hwnd);
-            // Look for the address bar (usually an Edit control with specific automation ID)
-            var addressBar = element.FindFirst(
-                System.Windows.Automation.TreeScope.Descendants,
-                new System.Windows.Automation.PropertyCondition(
-                    System.Windows.Automation.AutomationElement.ControlTypeProperty,
-                    System.Windows.Automation.ControlType.Edit));
-
-            if (addressBar is not null &&
-                addressBar.TryGetCurrentPattern(
-                    System.Windows.Automation.ValuePattern.Pattern, out var vp))
-            {
-                return ((System.Windows.Automation.ValuePattern)vp).Current.Value;
-            }
-        }
-        catch { }
+        // NOTE: WinUI 3 / .NET 8 cannot reference System.Windows.Automation (WPF-only).
+        // The COM-based UIAutomationService provides equivalent functionality and is the
+        // intended path for address-bar extraction. Returning null here lets callers fall
+        // back to the window-title heuristic without crashing.
+        _ = hwnd;
         return null;
     }
 }

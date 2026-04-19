@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Changelog — PAiA</title>
+  <meta name="description" content="Release notes for PAiA.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      <div class="nav-ball"></div>
+      <span>PAiA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/compare.html">Compare</a>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/changelog.html" class="active">Changelog</a>
+      <a href="/download.html" class="nav-cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding: 140px 0 40px;">
+  <div class="container">
+    <h1 style="font-size: clamp(36px, 5vw, 52px);">Changelog</h1>
+    <p class="tagline">Every release, what changed, and why.</p>
+  </div>
+</header>
+
+<section style="padding-top: 0;">
+  <div class="container-sm">
+
+    <div class="changelog-entry">
+      <span class="changelog-version">v0.3.0</span>
+      <span class="changelog-date">April 9, 2026</span>
+      <h3>Production-ready: distribution, telemetry, deferred features</h3>
+
+      <h4>Added</h4>
+      <ul>
+        <li>Crash reporting via Sentry — strictly opt-in with user-supplied DSN</li>
+        <li>Anonymous usage analytics — opt-in, property whitelist, zero-dependency</li>
+        <li>License webhook server (zero-dep Node) for Stripe + LemonSqueezy</li>
+        <li>Automated icon generation pipeline (sharp + png2icons)</li>
+        <li>Unit test suite expanded from 8 to 48 tests across 5 files</li>
+        <li>Piper TTS sidecar with lazy binary + voice download</li>
+        <li>Wake-word integration (Picovoice Porcupine, BYO key, opt-in)</li>
+        <li>Wayland active-window fallback via gdbus / qdbus / hyprctl</li>
+        <li>Renderer-process Sentry integration with PII scrubbing</li>
+        <li>Marketing website: landing, pricing, privacy, changelog, download, docs</li>
+      </ul>
+
+      <h4>Improved</h4>
+      <ul>
+        <li>Pure helper modules extracted into <code>src/shared/</code> for testability</li>
+        <li>CI release pipeline polished — code-signing env-var passthrough, public-key embed</li>
+        <li>Privacy settings tab consolidates all telemetry controls</li>
+      </ul>
+    </div>
+
+    <div class="changelog-entry">
+      <span class="changelog-version">v0.2.0</span>
+      <span class="changelog-date">April 8, 2026</span>
+      <h3>Phase 1 + 2: Heavy production rewrite</h3>
+
+      <h4>Added</h4>
+      <ul>
+        <li>Floating ball UI with click-to-expand chat panel</li>
+        <li>Multi-thread chat with sql.js persistence</li>
+        <li>React 18 renderer bundled with esbuild</li>
+        <li>Light / dark / system themes</li>
+        <li>3-step onboarding wizard</li>
+        <li>15 slash commands</li>
+        <li>7 built-in personas + user-defined CRUD</li>
+        <li>Markdown rendering with syntax-highlighted code blocks</li>
+        <li>Voice input via Whisper (offline) and Chromium</li>
+        <li>Voice output via system TTS</li>
+        <li>Screen capture (full + region drag-select) with Tesseract OCR</li>
+        <li>RAG knowledge collections with PDF / MD / text / code support</li>
+        <li>MCP (Model Context Protocol) tool servers with approval flow</li>
+        <li>Cloud provider plugins (OpenAI, Anthropic, OpenAI-compatible)</li>
+        <li>License + trial system with offline Ed25519 verification</li>
+        <li>Web search via DuckDuckGo with PII redaction</li>
+        <li>Drag-drop and clipboard-paste images for vision models</li>
+        <li>Quick actions on selected text (Ctrl+Alt+Q)</li>
+        <li>Active window context awareness (Win32 + macOS + X11)</li>
+        <li>11-category PII redaction</li>
+        <li>4 configurable global hotkeys</li>
+        <li>System tray with quit / show / hide</li>
+        <li>electron-builder targets for Windows, macOS, Linux</li>
+        <li>GitHub Actions CI building all 3 platforms</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <div class="nav-ball"></div>
+        <span>PAiA</span>
+      </div>
+      <p class="footer-tagline">The privacy-first AI desktop assistant.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <a href="/#features">Features</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/download.html">Download</a>
+      <a href="/changelog.html">Changelog</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="/privacy.html">Privacy policy</a>
+      <a href="mailto:hello@paia.local">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <a href="/docs.html">Documentation</a>
+      <a href="/docs.html#faq">FAQ</a>
+    </div>
+  </div>
+  <div class="footer-bottom">© 2026 PAiA. All rights reserved.</div>
+</footer>
+
+</body>
+</html>

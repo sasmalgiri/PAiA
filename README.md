@@ -2,139 +2,74 @@
 
 # PAiA
 
-### Privacy-first AI screen assistant for Windows
+### A floating ball that lives in your screen corner. Click it to chat, talk, capture your screen — all locally.
 
-**Your screen. Your AI. Your machine.**
+**Privacy-first AI desktop assistant. Cross-platform. Built for the long haul.**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Windows](https://img.shields.io/badge/Platform-Windows%2010%2F11-blue.svg)]()
-[![.NET 8](https://img.shields.io/badge/.NET-8.0-purple.svg)]()
-[![Ollama](https://img.shields.io/badge/AI-Ollama%20(Local)-orange.svg)](https://ollama.com)
-
-**On-demand AI screen assistant that captures only when you ask,**
-**processes everything locally, and never sends a byte to the cloud.**
-
-[Download](https://github.com/sasmalgiri/PAiA/releases) · [Getting Started](GETTING_STARTED.md) · [Architecture](ARCHITECTURE.md) · [FAQ](FAQ.md)
+[Website](https://paia.app) · [Download](https://paia.app/download.html) · [Pricing](https://paia.app/pricing.html) · [Docs](https://paia.app/docs.html) · [Changelog](https://paia.app/changelog.html)
 
 </div>
 
 ---
 
-## What is PAiA?
+## Quick orientation
 
-PAiA is a Windows desktop app that helps you with anything on your screen — code errors, form filling, email drafting, debugging, spreadsheets — using AI that runs entirely on your machine via [Ollama](https://ollama.com).
+This repository contains **two products** that share a name. If you're new here, you almost certainly want the second one:
 
-Press **Ctrl+Shift+P** from anywhere → select a window → get instant AI help. That's it.
-
-**Zero cloud. Zero background monitoring. Zero data collection.**
-
-## Why PAiA?
-
-Microsoft's Recall screenshots everything 24/7 and stores it in a database. Copilot sends your data to the cloud. Users pushed back hard — and Microsoft is now [retreating from these features](https://techcrunch.com/2026/03/20/microsoft-rolls-back-some-of-its-copilot-ai-bloat-on-windows/).
-
-PAiA is the opposite:
-
-| | Microsoft Recall | Copilot | **PAiA** |
+| | What it is | Status | Where it lives |
 |---|---|---|---|
-| **Captures** | Every few seconds, always | On interaction | **Only when you click** |
-| **Data goes to** | Local database | Microsoft cloud | **RAM only, 30s auto-delete** |
-| **Can disable?** | Complicated | Registry hacks | **One-click delete all** |
-| **Open source** | No | No | **Yes (MIT)** |
-| **Needs special HW** | NPU / Copilot+ PC | Internet | **Any Windows PC** |
-| **PII protection** | Opt-in exclusion list | None | **3-layer auto-redaction** |
+| **PAiA WinUI** | The original Windows-only prototype, .NET 8 + WinUI 3 | **Legacy** — kept for reference, no longer the active project | [`PAiA.WinUI/`](PAiA.WinUI/), [`PAiA.Tests/`](PAiA.Tests/), [`PAiA.sln`](PAiA.sln), [`README.legacy.md`](README.legacy.md) |
+| **PAiA Electron** | The current cross-platform product. Electron 33 + React 18 + sql.js. Ships on Windows, macOS, and Linux. | **Active** — this is what's on the website. | [`paia-electron/`](paia-electron/) |
 
-## Features
+The Electron version is a complete rewrite that incorporates everything from the WinUI prototype (the redaction engine, the privacy posture, the screen-intel ideas) plus a much wider feature set (RAG, MCP, vision, voice, multi-thread chat, cloud opt-in, license + trial system).
 
-**Screen Intelligence** — 4 signals working together:
-- **OCR** reads text from any screen
-- **UI Automation** reads actual control types, states, values via Windows Accessibility API
-- **Vision model** understands layout, charts, icons (if qwen-vl/llava installed)
-- **Active window** knows the app, process, and browser URL
+**If you're shipping the product:** work in `paia-electron/`. Read [paia-electron/README.md](paia-electron/README.md) and [paia-electron/OPERATIONS.md](paia-electron/OPERATIONS.md).
 
-**3-Layer PII Redaction** — before AI sees anything:
-- Custom rules (your company patterns — project names, ticket IDs)
-- Regex patterns (credit cards, SSNs, emails, API keys, JWTs, private keys)
-- NER engine (person names, addresses, medical terms, financial figures)
+**If you're researching how it used to work:** the WinUI prototype is preserved in [PAiA.WinUI/](PAiA.WinUI/) and documented in [README.legacy.md](README.legacy.md).
 
-**14 Context Types** — auto-detected with context-specific quick actions:
-Code · Terminal · Error · Form · Browser · Email · Settings · Installer · Spreadsheet · Document · Chat · Image · Video · General
+## What PAiA actually is (the active version)
 
-**SecurityLab** — self-testing immune system:
-- 18+ cataloged threats from real CVEs
-- 50+ automated attack simulations
-- Auto-hardening engine with real-time monitoring
+PAiA is a small floating ball that lives in your screen corner. Click it for the chat panel. Talk to it, type to it, drop files on it, point it at your screen.
 
-**Desktop App:**
-- System tray with minimize-to-tray
-- Global hotkey (Ctrl+Shift+P)
-- Smart clipboard queue (code blocks auto-queue)
-- Searchable response history with bookmarks
-- Pin response as always-on-top window
-- JSON plugin system (extensible without code changes)
-- Form helper overlay
-- Hardware-aware model recommender
-- Ollama auto-detection and auto-start
+- **Local by default.** Your conversations, voice, screen captures, and documents stay on your machine. No telemetry, no analytics, no crash reports unless you opt in.
+- **Multi-thread chat** with sql.js persistence, markdown rendering, syntax highlighting.
+- **Voice in and out** — offline Whisper STT, system or neural Piper TTS, optional wake word.
+- **Screen awareness** — full-screen capture, drag-region capture, local Tesseract OCR, vision-model integration.
+- **RAG knowledge stacks** — drop PDFs / Markdown / code, get cited answers from your own documents.
+- **MCP tool servers** with explicit per-call approval.
+- **Cloud providers** (OpenAI, Anthropic, OpenAI-compatible) gated by an explicit opt-in.
+- **PII redaction** — 11 categories scrubbed before any prompt leaves the renderer.
 
-## Quick Start
+## Getting started (active version)
 
-```powershell
-# 1. Install Ollama
-winget install Ollama
-
-# 2. Pull a model
-ollama pull qwen3.5:9b
-
-# 3. Download PAiA from Releases, extract, and run
-paia.exe
+```bash
+# Run from source
+cd paia-electron
+npm install
+ollama pull llama3.2          # in another terminal
+npm run dev
 ```
 
-See [GETTING_STARTED.md](GETTING_STARTED.md) for the full guide.
+A small glowing ball appears in your screen corner. Click it. Type. Talk. Done.
 
-## Hardware Guide
+For installer downloads (when available): [paia.app/download.html](https://paia.app/download.html)
 
-| Setup | Model | Speed |
-|-------|-------|-------|
-| **24GB+ VRAM** | `qwen3.5:27b` | Excellent — rivals cloud AI |
-| **16GB RAM + GPU** | `qwen3.5:9b` | Great — fast and smart |
-| **8GB RAM + GPU** | `qwen3:7b` | Good — responsive |
-| **CPU only** | `phi4-mini` | Usable — slower but works |
+For the developer / operator playbook (how to ship this thing):
+- [paia-electron/README.md](paia-electron/README.md) — full feature reference, architecture
+- [paia-electron/OPERATIONS.md](paia-electron/OPERATIONS.md) — phased launch checklist
+- [paia-electron/DISTRIBUTION.md](paia-electron/DISTRIBUTION.md) — code signing, license keys, payments
+- [paia-electron/ROADMAP.md](paia-electron/ROADMAP.md) — what's done, what's next
+- [paia-electron/CHANGELOG.md](paia-electron/CHANGELOG.md) — release notes
+- [paia-electron/SUPPORT.md](paia-electron/SUPPORT.md) — customer support runbook
 
-No GPU? PAiA still works. See [FAQ.md](FAQ.md#will-paia-work-without-a-gpu).
+## Repository layout
 
-## Building from Source
-
-```powershell
-git clone https://github.com/sasmalgiri/PAiA.git
-cd PAiA
-dotnet restore
-dotnet build --configuration Release
-dotnet run --project PAiA.WinUI
-
-# Run tests (120 test methods)
-dotnet test PAiA.Tests
-```
-
-Requires: Visual Studio 2022, .NET 8 SDK, WinUI 3 workload.
-
-## Privacy Architecture
-
-```
-Capture (user-initiated only)
-    → SensitiveAppFilter (warns for banking/password apps)
-    → GraphicsCapturePicker (OS-level consent)
-    → MemorySafeBitmap (RAM only, 30s auto-expire)
-    → ScreenIntelPipeline (OCR + UIAutomation + Vision + ActiveWindow)
-    → 3-Layer Redaction (custom → regex → NER)
-    → SecureOllamaClient (localhost-only, double-redacted)
-    → Response (clipboard queue → history → audit log)
-```
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) and [PRIVACY.md](PRIVACY.md) for details.
-
-## Contributing
-
-PRs welcome. Please read [ARCHITECTURE.md](ARCHITECTURE.md) first.
+See [REPO_LAYOUT.md](REPO_LAYOUT.md) for a complete map of every directory and what it does.
 
 ## License
 
-[MIT](LICENSE) — use it however you want.
+The active Electron product (`paia-electron/`) is **proprietary** with a [generous EULA](paia-electron/LICENSE) — free for personal use, paid Pro tier for commercial features.
+
+The legacy WinUI prototype (`PAiA.WinUI/`) is **MIT-licensed** for historical reasons. See [LICENSE](LICENSE) and [README.legacy.md](README.legacy.md).
+
+The shared redaction library (under [paia-electron/src/shared/redaction.ts](paia-electron/src/shared/redaction.ts)) may be open-sourced separately under MIT in a future release.

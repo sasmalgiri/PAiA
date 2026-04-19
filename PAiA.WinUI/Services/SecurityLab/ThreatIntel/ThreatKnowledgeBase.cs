@@ -193,7 +193,7 @@ public sealed class ThreatKnowledgeBase
                 AttackVector = "Misconfiguration — Ollama bound to 0.0.0.0 instead of 127.0.0.1",
                 RealWorldSource = "Cisco Talos research, Sept 2025",
                 MitigationStatus = MitigationStatus.FullyMitigated,
-                PaiaMitigation = "PrivacyGuard validates Ollama endpoint is strictly localhost. If user configures a remote Ollama, SecureOllamaClient throws SecurityException.",
+                PaiaMitigation = "PrivacyGuard validates Ollama endpoint is strictly localhost. If user configures a remote Ollama, SecureOllamaClient throws PrivacyViolationException.",
                 SimulationSteps = ["Set OLLAMA_HOST=0.0.0.0", "Verify PAiA refuses to connect", "Check PrivacyGuard blocks and logs the attempt"]
             },
 

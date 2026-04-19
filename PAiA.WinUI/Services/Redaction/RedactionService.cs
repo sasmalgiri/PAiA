@@ -28,7 +28,7 @@ public sealed partial class RedactionService
     /// </summary>
     public string Redact(string text)
     {
-        if (string.IsNullOrEmpty(text)) return text;
+        if (string.IsNullOrEmpty(text)) return text ?? "";
         var result = text;
         foreach (var (pattern, replacement) in Patterns)
             result = pattern.Replace(result, replacement);

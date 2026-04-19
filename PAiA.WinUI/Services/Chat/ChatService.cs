@@ -78,6 +78,16 @@ public sealed class ChatService
     public void ClearHistory() => _history.Clear();
 
     /// <summary>
+    /// Injects web search results into the next message context.
+    /// The results are included as part of the system context, not chat history.
+    /// </summary>
+    private string? _searchContext;
+    public void InjectSearchContext(string searchResults)
+    {
+        _searchContext = searchResults;
+    }
+
+    /// <summary>
     /// Clears everything — context and history.
     /// </summary>
     public void Reset()
@@ -123,6 +133,14 @@ public sealed class ChatService
             }
             sb.AppendLine("=== END HISTORY ===");
             sb.AppendLine();
+        }
+
+        // Include web search results if available (one-time injection)
+        if (_searchContext is not null)
+        {
+            sb.AppendLine(_searchContext);
+            sb.AppendLine();
+            _searchContext = null; // Clear after use — one-shot
         }
 
         sb.AppendLine($"User: {latestMessage}");
