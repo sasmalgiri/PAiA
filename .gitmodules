@@ -1,0 +1,3 @@
+[submodule "PAiA"]
+	path = PAiA
+	url = https://github.com/sasmalgiri/PAiA-winui-legacy.git
