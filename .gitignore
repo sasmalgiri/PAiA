@@ -26,6 +26,7 @@ AppPackages/
 [Tt]est[Rr]esult*/
 *.trx
 *.log
+*.binlog
 *.tmp
 *.bak
 *.swp
@@ -37,3 +38,36 @@ AuditLogs/
 # Source archives
 files/
 *.zip
+
+# ── Electron / Node ────────────────────────────────────────────
+node_modules/
+dist/
+release/
+build/
+out/
+.next/
+.parcel-cache/
+
+# ── Secrets — NEVER commit any of these ───────────────────────
+.env
+.env.local
+.env.*.local
+.keys/
+*.pfx
+*.p12
+cert.pfx
+
+# ── npm / yarn / pnpm logs ─────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── Local scratch ──────────────────────────────────────────────
+scratch/
+tmp/
+temp/
+coverage/
+
+# ── Editor ─────────────────────────────────────────────────────
+.vscode/
