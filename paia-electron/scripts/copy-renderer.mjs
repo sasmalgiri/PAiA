@@ -34,3 +34,19 @@ if (existsSync(sqlWasmSrc)) {
   await copyFile(sqlWasmSrc, sqlWasmDst);
   console.log('copied sql-wasm.wasm');
 }
+
+// Ship the KaTeX stylesheet + font files alongside the renderer so LaTeX
+// math rendering works without a network round-trip. The main app CSP
+// restricts font-src to 'self' + data:, so self-hosting is mandatory.
+const katexCssSrc = join(projectRoot, 'node_modules', 'katex', 'dist', 'katex.min.css');
+const katexCssDst = join(outDir, 'katex.min.css');
+if (existsSync(katexCssSrc)) {
+  await copyFile(katexCssSrc, katexCssDst);
+  console.log('copied katex.min.css');
+  const fontsSrc = join(projectRoot, 'node_modules', 'katex', 'dist', 'fonts');
+  const fontsDst = join(outDir, 'fonts');
+  if (existsSync(fontsSrc)) {
+    await cp(fontsSrc, fontsDst, { recursive: true });
+    console.log('copied katex fonts');
+  }
+}

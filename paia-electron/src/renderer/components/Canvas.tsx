@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Artifact } from '../../shared/types';
 import { api } from '../lib/api';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown, renderDiagramsInside } from '../lib/markdown';
 import { InputModal } from './InputModal';
 
 interface Props {
@@ -134,6 +134,7 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
               ) : selected.kind === 'markdown' ? (
                 <div
                   className="markdown canvas-view"
+                  ref={(el) => { if (el) void renderDiagramsInside(el); }}
                   dangerouslySetInnerHTML={{ __html: renderMarkdown(selected.content) }}
                 />
               ) : selected.kind === 'html' || selected.kind === 'svg' ? (

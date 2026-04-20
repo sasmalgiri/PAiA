@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { DbMessage } from '../../shared/types';
-import { renderMarkdown } from '../lib/markdown';
+import { renderMarkdown, renderDiagramsInside } from '../lib/markdown';
 
 interface MessageProps {
   message: DbMessage;
@@ -43,6 +43,12 @@ export function Message({ message, streaming }: MessageProps) {
       });
       pre.appendChild(btn);
     });
+    // Render any mermaid/SMILES blocks that haven't been rendered yet.
+    // We skip this while a response is still streaming so we don't try to
+    // parse a half-finished diagram on every token.
+    if (!streaming) {
+      void renderDiagramsInside(el);
+    }
   });
 
   if (message.role === 'system') {
