@@ -169,6 +169,29 @@ export async function initDatabase(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_memory_scope ON memory(scope, updated_at);
 
+    -- ── per-message feedback (thumbs up/down, self-learning) ──────
+    CREATE TABLE IF NOT EXISTS message_feedback (
+      message_id TEXT PRIMARY KEY REFERENCES messages(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL CHECK(kind IN ('up', 'down')),
+      note TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_feedback_kind ON message_feedback(kind, created_at);
+
+    -- ── post-turn reflections (audit trail of what PAiA learned) ──
+    -- These are write-once records pointing at the memory entry that
+    -- was created — so the user can trace "why do you think I prefer X".
+    CREATE TABLE IF NOT EXISTS reflections (
+      id TEXT PRIMARY KEY,
+      thread_id TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+      last_message_id TEXT,
+      trigger TEXT NOT NULL,
+      extracted_memory_ids TEXT NOT NULL DEFAULT '[]',
+      summary TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_reflections_thread ON reflections(thread_id, created_at);
+
     -- ── agent runs + steps ─────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS agent_runs (
       id TEXT PRIMARY KEY,
@@ -865,6 +888,122 @@ export function deleteMemory(id: string): void {
   const d = ensureDb();
   d.run(`DELETE FROM memory WHERE id = ?`, [id]);
   persist();
+}
+
+// ─── message feedback + reflections (self-learning) ────────────────
+
+export interface MessageFeedback {
+  messageId: string;
+  kind: 'up' | 'down';
+  note: string;
+  createdAt: number;
+}
+
+export function setMessageFeedback(messageId: string, kind: 'up' | 'down', note: string = ''): void {
+  const d = ensureDb();
+  const now = Date.now();
+  d.run(
+    `INSERT INTO message_feedback (message_id, kind, note, created_at) VALUES (?, ?, ?, ?)
+     ON CONFLICT(message_id) DO UPDATE SET kind = excluded.kind, note = excluded.note, created_at = excluded.created_at`,
+    [messageId, kind, note, now],
+  );
+  persist();
+}
+
+export function clearMessageFeedback(messageId: string): void {
+  const d = ensureDb();
+  d.run(`DELETE FROM message_feedback WHERE message_id = ?`, [messageId]);
+  persist();
+}
+
+export function getMessageFeedback(messageId: string): MessageFeedback | null {
+  const d = ensureDb();
+  const rows = d.exec(`SELECT message_id, kind, note, created_at FROM message_feedback WHERE message_id = ?`, [messageId]);
+  if (rows.length === 0 || rows[0].values.length === 0) return null;
+  const v = rows[0].values[0];
+  return { messageId: v[0] as string, kind: v[1] as 'up' | 'down', note: (v[2] as string) ?? '', createdAt: v[3] as number };
+}
+
+export function findThreadForMessage(messageId: string): { threadId: string } | null {
+  const d = ensureDb();
+  const rows = d.exec(`SELECT thread_id FROM messages WHERE id = ?`, [messageId]);
+  if (rows.length === 0 || rows[0].values.length === 0) return null;
+  return { threadId: rows[0].values[0][0] as string };
+}
+
+export function listRecentDownvotes(limit = 50): MessageFeedback[] {
+  const d = ensureDb();
+  const rows = d.exec(
+    `SELECT message_id, kind, note, created_at FROM message_feedback WHERE kind = 'down' ORDER BY created_at DESC LIMIT ?`,
+    [limit],
+  );
+  if (rows.length === 0) return [];
+  return rows[0].values.map((v) => ({
+    messageId: v[0] as string,
+    kind: v[1] as 'up' | 'down',
+    note: (v[2] as string) ?? '',
+    createdAt: v[3] as number,
+  }));
+}
+
+export interface Reflection {
+  id: string;
+  threadId: string;
+  lastMessageId: string | null;
+  trigger: string;
+  extractedMemoryIds: string[];
+  summary: string;
+  createdAt: number;
+}
+
+export function saveReflection(r: Omit<Reflection, 'createdAt'>): Reflection {
+  const d = ensureDb();
+  const now = Date.now();
+  d.run(
+    `INSERT INTO reflections (id, thread_id, last_message_id, trigger, extracted_memory_ids, summary, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [r.id, r.threadId, r.lastMessageId, r.trigger, JSON.stringify(r.extractedMemoryIds), r.summary, now],
+  );
+  persist();
+  return { ...r, createdAt: now };
+}
+
+export function listReflectionsForThread(threadId: string, limit = 50): Reflection[] {
+  const d = ensureDb();
+  const rows = d.exec(
+    `SELECT id, thread_id, last_message_id, trigger, extracted_memory_ids, summary, created_at
+     FROM reflections WHERE thread_id = ? ORDER BY created_at DESC LIMIT ?`,
+    [threadId, limit],
+  );
+  if (rows.length === 0) return [];
+  return rows[0].values.map((v) => ({
+    id: v[0] as string,
+    threadId: v[1] as string,
+    lastMessageId: (v[2] as string | null) ?? null,
+    trigger: v[3] as string,
+    extractedMemoryIds: safeJsonArray(v[4] as string),
+    summary: (v[5] as string) ?? '',
+    createdAt: v[6] as number,
+  }));
+}
+
+export function listAllReflections(limit = 200): Reflection[] {
+  const d = ensureDb();
+  const rows = d.exec(
+    `SELECT id, thread_id, last_message_id, trigger, extracted_memory_ids, summary, created_at
+     FROM reflections ORDER BY created_at DESC LIMIT ?`,
+    [limit],
+  );
+  if (rows.length === 0) return [];
+  return rows[0].values.map((v) => ({
+    id: v[0] as string,
+    threadId: v[1] as string,
+    lastMessageId: (v[2] as string | null) ?? null,
+    trigger: v[3] as string,
+    extractedMemoryIds: safeJsonArray(v[4] as string),
+    summary: (v[5] as string) ?? '',
+    createdAt: v[6] as number,
+  }));
 }
 
 export function searchMemoryByEmbedding(query: number[], topK: number): MemoryEntry[] {

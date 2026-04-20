@@ -352,6 +352,14 @@ const api = {
     ipcRenderer.invoke('paia:memory-recall', p),
   memoryDelete: (id: string): Promise<void> => ipcRenderer.invoke('paia:memory-delete', id),
 
+  // ── experience (self-learning) ──────────────────────────
+  experienceFeedback: (p: { messageId: string; kind: 'up' | 'down' | 'clear'; note?: string }): Promise<{ ok: boolean; reflectionSavedMemoryIds?: string[]; error?: string }> =>
+    ipcRenderer.invoke('paia:experience-feedback', p),
+  experienceGetFeedback: (messageId: string): Promise<{ messageId: string; kind: 'up' | 'down'; note: string; createdAt: number } | null> =>
+    ipcRenderer.invoke('paia:experience-get-feedback', messageId),
+  experienceListReflections: (p?: { threadId?: string; limit?: number }): Promise<Array<{ id: string; threadId: string; lastMessageId: string | null; trigger: string; extractedMemoryIds: string[]; summary: string; createdAt: number }>> =>
+    ipcRenderer.invoke('paia:experience-list-reflections', p),
+
   // ── artifacts / canvas ──────────────────────────────────
   artifactsList: (threadId?: string): Promise<Artifact[]> =>
     ipcRenderer.invoke('paia:artifacts-list', threadId),

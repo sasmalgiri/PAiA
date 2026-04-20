@@ -45,6 +45,7 @@ import * as wakeWord from './wakeWord';
 import * as agent from './agent';
 import * as researchSvc from './research';
 import * as memorySvc from './memory';
+import * as experience from './experience';
 import * as artifactsSvc from './artifacts';
 import * as scheduler from './scheduler';
 import * as classroom from './classroom';
@@ -503,6 +504,13 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
     // 6. Persist the assistant reply.
     db.addMessage(threadId, 'assistant', text, 0);
     event.sender.send('paia:chat-done', { threadId, text });
+
+    // 7. Schedule a post-turn reflection — PAiA reviews the exchange
+    //    after a 20 s idle window and extracts durable lessons into
+    //    memory. Non-blocking; pure local-model call; skipped entirely
+    //    if memory is disabled or no local model is configured.
+    try { experience.scheduleReflection(threadId); } catch (err) { logger.warn('scheduleReflection failed', err); }
+
     return { ok: true, text };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -811,6 +819,26 @@ ipcMain.handle(
 ipcMain.handle('paia:memory-delete', (_e, id: string) => {
   memorySvc.forget(id);
 });
+
+// ─── experience / self-learning IPC ───────────────────────────────
+
+ipcMain.handle(
+  'paia:experience-feedback',
+  async (_e, p: { messageId: string; kind: 'up' | 'down' | 'clear'; note?: string }) => {
+    try {
+      const out = await experience.recordFeedback(p.messageId, p.kind, p.note ?? '');
+      return { ok: true, ...out };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : String(err) };
+    }
+  },
+);
+
+ipcMain.handle('paia:experience-get-feedback', (_e, messageId: string) => experience.getFeedback(messageId));
+
+ipcMain.handle('paia:experience-list-reflections', (_e, p?: { threadId?: string; limit?: number }) =>
+  experience.listReflections(p?.threadId, p?.limit ?? 100),
+);
 
 // ─── artifacts IPC ────────────────────────────────────────────────
 

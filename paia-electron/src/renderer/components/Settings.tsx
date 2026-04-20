@@ -1516,11 +1516,13 @@ function AgentTab({ settings, onSave }: { settings: Settings; onSave: (p: Partia
 
 function MemoryTab() {
   const [entries, setEntries] = useState<MemoryEntry[]>([]);
+  const [reflections, setReflections] = useState<Awaited<ReturnType<typeof api.experienceListReflections>>>([]);
   const [text, setText] = useState('');
   const [scope, setScope] = useState<MemoryScope>('fact');
 
   async function refresh(): Promise<void> {
     setEntries(await api.memoryList());
+    setReflections(await api.experienceListReflections({ limit: 40 }));
   }
 
   useEffect(() => { void refresh(); }, []);
@@ -1574,6 +1576,28 @@ function MemoryTab() {
             <span className="memory-scope">{m.scope}</span>
             <span className="memory-text">{m.text}</span>
             <button type="button" className="icon-btn" title="Forget" onClick={() => void del(m.id)}>×</button>
+          </div>
+        ))}
+      </div>
+
+      <div className="settings-section-title" style={{ marginTop: 20 }}>Learned from experience</div>
+      <div className="muted-note">
+        After each conversation, PAiA reviews the last exchange with a local model and extracts durable lessons
+        into the list above. Each extraction is logged here so you can trace <em>why</em> PAiA thinks you prefer
+        something. Thumbs-down feedback on any assistant message triggers an immediate "what went wrong" extraction.
+      </div>
+      <div className="memory-list">
+        {reflections.length === 0 && (
+          <div className="muted-note" style={{ textAlign: 'center', padding: '12px', border: '1px dashed var(--border)', borderRadius: 6 }}>
+            No reflections logged yet.
+          </div>
+        )}
+        {reflections.map((r) => (
+          <div key={r.id} className="memory-entry" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+            <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+              {new Date(r.createdAt).toLocaleString()} · {r.trigger} · {r.extractedMemoryIds.length} lesson{r.extractedMemoryIds.length === 1 ? '' : 's'}
+            </div>
+            <div style={{ fontSize: 13, whiteSpace: 'pre-wrap' }}>{r.summary || '(no lessons extracted)'}</div>
           </div>
         ))}
       </div>

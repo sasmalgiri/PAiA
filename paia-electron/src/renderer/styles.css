@@ -1938,6 +1938,51 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   width: 100%;
 }
 
+/* ── Message feedback (self-learning) ──────────────────────────── */
+.msg-feedback {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0.4;
+  transition: opacity 0.15s;
+}
+.msg.assistant:hover .msg-feedback,
+.msg-feedback:focus-within,
+.msg-feedback:has(.active) {
+  opacity: 1;
+}
+.msg-feedback-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+}
+.msg-feedback-btn:hover {
+  background: var(--bg-3);
+  border-color: var(--border);
+}
+.msg-feedback-btn.active {
+  background: rgba(46, 160, 67, 0.15);
+  border-color: rgba(46, 160, 67, 0.5);
+  color: #3fb959;
+}
+.msg-feedback-btn.active.down {
+  background: rgba(220, 102, 102, 0.15);
+  border-color: rgba(220, 102, 102, 0.5);
+  color: #e06c6c;
+}
+.msg-feedback-note {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+  animation: undo-in 0.2s ease-out;
+}
+
 /* ── Whiteboard (Excalidraw) ───────────────────────────────────── */
 .canvas-whiteboard {
   flex: 1;

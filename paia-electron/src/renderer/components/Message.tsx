@@ -2,9 +2,10 @@
 // wrapped text for user input. Code blocks get a "copy" button injected
 // after render.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DbMessage } from '../../shared/types';
 import { renderMarkdown, renderDiagramsInside } from '../lib/markdown';
+import { api } from '../lib/api';
 
 interface MessageProps {
   message: DbMessage;
@@ -80,6 +81,48 @@ export function Message({ message, streaming }: MessageProps) {
   }
 
   // assistant
+  return <AssistantMessage message={message} streaming={streaming} bodyRef={bodyRef} />;
+}
+
+function AssistantMessage({
+  message,
+  streaming,
+  bodyRef,
+}: {
+  message: DbMessage;
+  streaming?: boolean;
+  bodyRef: React.MutableRefObject<HTMLDivElement | null>;
+}) {
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+  const [savedLessons, setSavedLessons] = useState<number | null>(null);
+  // Don't surface feedback UI for optimistic (not-yet-persisted) messages
+  // — the id would be a placeholder and the server wouldn't find it.
+  const hasRealId = !message.id.startsWith('optimistic-') && !message.id.startsWith('opt-');
+
+  useEffect(() => {
+    if (!hasRealId) return;
+    let cancelled = false;
+    void api.experienceGetFeedback(message.id).then((f) => {
+      if (!cancelled) setFeedback(f?.kind ?? null);
+    });
+    return () => { cancelled = true; };
+  }, [message.id, hasRealId]);
+
+  async function rate(kind: 'up' | 'down'): Promise<void> {
+    if (!hasRealId || streaming) return;
+    const next = feedback === kind ? 'clear' : kind;
+    // Optimistic toggle; main process will confirm.
+    setFeedback(next === 'clear' ? null : next);
+    const res = await api.experienceFeedback({ messageId: message.id, kind: next });
+    if (res.ok) {
+      const n = res.reflectionSavedMemoryIds?.length ?? 0;
+      if (n > 0) {
+        setSavedLessons(n);
+        setTimeout(() => setSavedLessons(null), 4000);
+      }
+    }
+  }
+
   return (
     <div className="msg assistant">
       <div
@@ -88,6 +131,29 @@ export function Message({ message, streaming }: MessageProps) {
         // marked escapes raw HTML inside markdown by default.
         dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content || (streaming ? '…' : '')) }}
       />
+      {hasRealId && !streaming && (
+        <div className="msg-feedback">
+          <button
+            type="button"
+            className={`msg-feedback-btn ${feedback === 'up' ? 'active' : ''}`}
+            aria-label="Helpful"
+            title="Helpful"
+            onClick={() => void rate('up')}
+          >👍</button>
+          <button
+            type="button"
+            className={`msg-feedback-btn ${feedback === 'down' ? 'active down' : ''}`}
+            aria-label="Not helpful"
+            title="Not helpful — PAiA will extract what went wrong"
+            onClick={() => void rate('down')}
+          >👎</button>
+          {savedLessons !== null && (
+            <span className="msg-feedback-note">
+              Learned {savedLessons} lesson{savedLessons === 1 ? '' : 's'}.
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
