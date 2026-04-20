@@ -24,12 +24,24 @@
 //      and tags the resulting memory with 'feedback'.
 
 import { randomUUID } from 'crypto';
+import { BrowserWindow } from 'electron';
 import type { DbMessage, MemoryEntry, MemoryScope } from '../shared/types';
 import * as db from './db';
 import * as memorySvc from './memory';
 import * as settingsStore from './settings';
 import { logger } from './logger';
 import * as providers from './providers';
+
+function broadcastReflection(threadId: string, summary: string, count: number): void {
+  for (const w of BrowserWindow.getAllWindows()) {
+    try {
+      w.webContents.send('paia:experience-reflection-saved', { threadId, summary, count });
+    } catch {
+      // Window may have been destroyed between getAllWindows() and send;
+      // nothing actionable, skip.
+    }
+  }
+}
 
 const DEBOUNCE_MS = 20_000;
 const WINDOW_MESSAGES = 6;
@@ -200,14 +212,16 @@ async function runExtraction(
     }
     const baseTags = feedback ? [`feedback:${feedback}`, 'auto-reflect'] : ['auto-reflect'];
     const savedIds = await saveLessons(lessons, baseTags);
+    const summary = lessons.map((l) => `(${l.scope}) ${l.text}`).join('\n');
     db.saveReflection({
       id: randomUUID(),
       threadId,
       lastMessageId,
       trigger,
       extractedMemoryIds: savedIds,
-      summary: lessons.map((l) => `(${l.scope}) ${l.text}`).join('\n'),
+      summary,
     });
+    if (savedIds.length > 0) broadcastReflection(threadId, summary, savedIds.length);
     logger.info(`[experience] saved ${savedIds.length} lessons for thread ${threadId} (trigger=${trigger})`);
   } catch (err) {
     logger.warn('[experience] reflection failed:', err);
@@ -313,14 +327,16 @@ export async function recordFeedback(
     const lessons = parseLessons(response);
     if (lessons.length === 0) return { reflectionSavedMemoryIds: [] };
     const savedIds = await saveLessons(lessons, [`feedback:${kind}`, 'user-rated']);
+    const summary = lessons.map((l) => `(${l.scope}) ${l.text}`).join('\n');
     db.saveReflection({
       id: randomUUID(),
       threadId,
       lastMessageId: messageId,
       trigger: `feedback:${kind}`,
       extractedMemoryIds: savedIds,
-      summary: lessons.map((l) => `(${l.scope}) ${l.text}`).join('\n'),
+      summary,
     });
+    if (savedIds.length > 0) broadcastReflection(threadId, summary, savedIds.length);
     return { reflectionSavedMemoryIds: savedIds };
   } catch (err) {
     logger.warn('[experience] feedback reflection failed:', err);

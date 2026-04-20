@@ -840,6 +840,51 @@ ipcMain.handle('paia:experience-list-reflections', (_e, p?: { threadId?: string;
   experience.listReflections(p?.threadId, p?.limit ?? 100),
 );
 
+// ─── message actions (regenerate + fork) ──────────────────────────
+
+ipcMain.handle('paia:trim-messages-after', (_e, p: { threadId: string; fromMessageId: string }) =>
+  db.trimMessagesAfter(p.threadId, p.fromMessageId),
+);
+
+ipcMain.handle('paia:fork-thread', (_e, p: { sourceThreadId: string; untilMessageId: string; title: string }) =>
+  db.forkThreadAtMessage(p.sourceThreadId, p.untilMessageId, p.title),
+);
+
+ipcMain.handle('paia:export-thread-markdown', async (_e, threadId: string) => {
+  try {
+    const thread = db.getThread(threadId);
+    if (!thread) return { ok: false, error: 'Thread not found' };
+    const msgs = db.listMessages(threadId);
+    const lines: string[] = [];
+    lines.push(`# ${thread.title}`);
+    lines.push('');
+    lines.push(`_Exported ${new Date().toISOString()} from PAiA · persona: ${thread.personaId ?? '—'} · model: ${thread.model ?? '—'}_`);
+    lines.push('');
+    for (const m of msgs) {
+      if (m.role === 'system') continue;
+      const header = m.role === 'user' ? '## You' : '## Assistant';
+      lines.push(header);
+      lines.push('');
+      lines.push(m.content);
+      lines.push('');
+    }
+    const safe = thread.title.replace(/[^a-zA-Z0-9-_ ]/g, '').trim().slice(0, 80) || 'conversation';
+    const defaultPath = `${safe}.md`;
+    const { dialog } = await import('electron');
+    const res = await dialog.showSaveDialog({
+      title: 'Export conversation',
+      defaultPath,
+      filters: [{ name: 'Markdown', extensions: ['md'] }],
+    });
+    if (res.canceled || !res.filePath) return { ok: false, cancelled: true };
+    const fs = await import('fs');
+    fs.writeFileSync(res.filePath, lines.join('\n'), 'utf-8');
+    return { ok: true, path: res.filePath };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
 // ─── artifacts IPC ────────────────────────────────────────────────
 
 ipcMain.handle('paia:artifacts-list', (_e, threadId?: string) =>

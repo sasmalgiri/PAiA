@@ -359,6 +359,16 @@ const api = {
     ipcRenderer.invoke('paia:experience-get-feedback', messageId),
   experienceListReflections: (p?: { threadId?: string; limit?: number }): Promise<Array<{ id: string; threadId: string; lastMessageId: string | null; trigger: string; extractedMemoryIds: string[]; summary: string; createdAt: number }>> =>
     ipcRenderer.invoke('paia:experience-list-reflections', p),
+  onReflectionSaved: (handler: (p: { threadId: string; summary: string; count: number }) => void) =>
+    sub('paia:experience-reflection-saved', handler),
+
+  // ── message actions ─────────────────────────────────────
+  trimMessagesAfter: (p: { threadId: string; fromMessageId: string }): Promise<number> =>
+    ipcRenderer.invoke('paia:trim-messages-after', p),
+  forkThread: (p: { sourceThreadId: string; untilMessageId: string; title: string }): Promise<DbThread | null> =>
+    ipcRenderer.invoke('paia:fork-thread', p),
+  exportThreadMarkdown: (threadId: string): Promise<{ ok: true; path: string } | { ok: false; cancelled?: true; error?: string }> =>
+    ipcRenderer.invoke('paia:export-thread-markdown', threadId),
 
   // ── artifacts / canvas ──────────────────────────────────
   artifactsList: (threadId?: string): Promise<Artifact[]> =>

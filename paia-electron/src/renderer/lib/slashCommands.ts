@@ -117,6 +117,54 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     description: 'Search long-term memory: /recall <query>',
     rewrite: () => null,
   },
+
+  // ── Expression-format scaffolds (discoverability for math/mermaid/chem) ──
+  // These show the user *how* to prompt for a given format so they know
+  // PAiA supports it. They rewrite into a primed instruction that keeps
+  // the model inside the desired output channel.
+  {
+    name: 'math',
+    description: 'Ask for an answer rendered with LaTeX math. /math <question>',
+    rewrite: (input) =>
+      `Answer using LaTeX math. Put inline formulas in $...$ and display equations in $$...$$. Show each derivation step on its own line.\n\nQuestion: ${input}`,
+  },
+  {
+    name: 'mermaid',
+    description: 'Ask for the answer as a Mermaid diagram. /mermaid <description>',
+    rewrite: (input) =>
+      `Respond with a single Mermaid diagram in a \`\`\`mermaid fenced block that addresses the request below. Add a one-paragraph caption after the block only if essential.\n\nRequest: ${input}`,
+  },
+  {
+    name: 'chem',
+    description: 'Draw a molecule from its SMILES / common name. /chem <name or SMILES>',
+    rewrite: (input) =>
+      `Draw the molecule described below. If a SMILES string is given, render it directly in a \`\`\`smiles fenced block. If a common name is given, give the SMILES, then render. Add a one-line note about key functional groups.\n\n${input}`,
+  },
+  {
+    name: 'whiteboard',
+    description: 'Open a new whiteboard artifact in the Canvas.',
+    rewrite: () => null,
+  },
+  {
+    name: 'persona',
+    description: 'Open the persona picker (or switch: /persona <id>).',
+    rewrite: () => null,
+  },
+  {
+    name: 'learned',
+    description: 'Show what PAiA has learned about you recently.',
+    rewrite: () => null,
+  },
+  {
+    name: 'export',
+    description: 'Export the current conversation as Markdown.',
+    rewrite: () => null,
+  },
+  {
+    name: 'shortcuts',
+    description: 'Show the keyboard-shortcut cheat sheet.',
+    rewrite: () => null,
+  },
 ];
 
 export function findCommand(name: string): SlashCommand | null {

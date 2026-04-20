@@ -540,6 +540,60 @@ export function deleteMessage(id: string): void {
   persist();
 }
 
+/**
+ * Delete every message in `threadId` whose `created_at` is strictly greater
+ * than the created_at of `fromMessageId`. Used by "regenerate": we keep the
+ * last user turn and drop the assistant reply (and any stragglers) so the
+ * chat-send pipeline can produce a fresh response.
+ */
+export function trimMessagesAfter(threadId: string, fromMessageId: string): number {
+  const d = ensureDb();
+  const rows = d.exec(`SELECT created_at FROM messages WHERE id = ?`, [fromMessageId]);
+  if (rows.length === 0 || rows[0].values.length === 0) return 0;
+  const cutoff = rows[0].values[0][0] as number;
+  const before = d.exec(`SELECT COUNT(*) FROM messages WHERE thread_id = ? AND created_at > ?`, [threadId, cutoff]);
+  const n = before.length > 0 ? (before[0].values[0][0] as number) : 0;
+  d.run(`DELETE FROM messages WHERE thread_id = ? AND created_at > ?`, [threadId, cutoff]);
+  persist();
+  return n;
+}
+
+/**
+ * Create a new thread whose messages are copies of `sourceThreadId`'s
+ * messages up to and including `untilMessageId`. Returns the new thread.
+ * Used by "fork from here" to branch an alternative continuation without
+ * destroying the original.
+ */
+export function forkThreadAtMessage(
+  sourceThreadId: string,
+  untilMessageId: string,
+  title: string,
+): DbThread | null {
+  const d = ensureDb();
+  const srcRows = d.exec(`SELECT persona_id, model FROM threads WHERE id = ?`, [sourceThreadId]);
+  if (srcRows.length === 0 || srcRows[0].values.length === 0) return null;
+  const personaId = srcRows[0].values[0][0] as string | null;
+  const model = srcRows[0].values[0][1] as string | null;
+  const newThread = createThread(title, personaId, model);
+  const untilRows = d.exec(`SELECT created_at FROM messages WHERE id = ?`, [untilMessageId]);
+  if (untilRows.length === 0 || untilRows[0].values.length === 0) return newThread;
+  const cutoff = untilRows[0].values[0][0] as number;
+  const msgs = d.exec(
+    `SELECT role, content, redacted_count FROM messages WHERE thread_id = ? AND created_at <= ? ORDER BY created_at ASC`,
+    [sourceThreadId, cutoff],
+  );
+  if (msgs.length > 0) {
+    for (const row of msgs[0].values) {
+      const role = row[0] as 'user' | 'assistant' | 'system';
+      const content = row[1] as string;
+      const redacted = (row[2] as number) ?? 0;
+      addMessage(newThread.id, role, content, redacted);
+    }
+  }
+  persist();
+  return newThread;
+}
+
 // ─── knowledge collections ──────────────────────────────────────────
 
 export function createCollection(name: string, description: string, embeddingModel: string): KnowledgeCollection {

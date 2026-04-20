@@ -18,6 +18,8 @@ import { Composer } from './Composer';
 import { Sidebar } from './Sidebar';
 import { TrialPill } from './TrialPill';
 import { ActivityBar } from './ActivityBar';
+import { PersonaPicker } from './PersonaPicker';
+import { ShortcutHelp } from './ShortcutHelp';
 
 interface PanelProps {
   settings: Settings;
@@ -36,6 +38,8 @@ interface PanelProps {
   onStartAgent: (goal: string) => void;
   onStartResearch: (question: string) => void;
   onOpenCanvas: () => void;
+  onRegenerateLast?: () => void;
+  onForkFromMessage?: (messageId: string) => void;
 }
 
 export function Panel(props: PanelProps) {
@@ -44,10 +48,13 @@ export function Panel(props: PanelProps) {
     onClose, onOpenSettings, onOpenThread, onNewThread, onDeleteThread,
     onSend, onPersonaChange, onModelChange,
     onStartAgent, onStartResearch, onOpenCanvas,
+    onRegenerateLast, onForkFromMessage,
   } = props;
 
   const { t } = useT();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [personaPickerOpen, setPersonaPickerOpen] = useState(false);
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
   const [ollamaOk, setOllamaOk] = useState<boolean | null>(null);
   const [collections, setCollections] = useState<KnowledgeCollection[]>([]);
@@ -177,6 +184,55 @@ export function Panel(props: PanelProps) {
       void doRecall(q);
       return;
     }
+    if (name === 'whiteboard') {
+      onOpenCanvas();
+      showNotice('info', 'Canvas opened. Click "+ Whiteboard" in the Canvas header.');
+      return;
+    }
+    if (name === 'persona') {
+      const id = rest.trim();
+      if (id) {
+        const match = personas.find((p) => p.id === id || p.name.toLowerCase() === id.toLowerCase());
+        if (match) { onPersonaChange(match.id); showNotice('info', `Persona: ${match.emoji} ${match.name}`); }
+        else showNotice('warn', `No persona matched "${id}". Type /persona with no argument to browse.`);
+      } else {
+        setPersonaPickerOpen(true);
+      }
+      return;
+    }
+    if (name === 'learned') {
+      void doShowLearned();
+      return;
+    }
+    if (name === 'export') {
+      if (!currentThread) { showNotice('warn', 'Open a conversation first.'); return; }
+      void doExportThread();
+      return;
+    }
+    if (name === 'shortcuts') {
+      setShortcutHelpOpen(true);
+      return;
+    }
+  }
+
+  async function doShowLearned(): Promise<void> {
+    const reflections = await api.experienceListReflections({ threadId: currentThread?.id, limit: 8 });
+    if (reflections.length === 0) {
+      showNotice('info', 'Nothing learned yet in this thread — try a few exchanges and give a 👍/👎.');
+      return;
+    }
+    const summary = reflections
+      .map((r) => `• ${new Date(r.createdAt).toLocaleString()} — ${r.summary.split('\n')[0]}`)
+      .join('\n');
+    showNotice('info', `Recent lessons:\n${summary}`);
+  }
+
+  async function doExportThread(): Promise<void> {
+    if (!currentThread) return;
+    const res = await api.exportThreadMarkdown(currentThread.id);
+    if (res.ok) showNotice('info', `Exported to ${res.path}`);
+    else if (res.cancelled) return;
+    else showNotice('error', `Export failed: ${res.error ?? 'unknown error'}`);
   }
 
   async function doRemember(text: string): Promise<void> {
@@ -287,18 +343,23 @@ export function Panel(props: PanelProps) {
           <strong>PAiA</strong>
         </div>
         <div className="panel-actions no-drag">
-          <select
-            value={settings.personaId}
-            onChange={(e) => onPersonaChange(e.target.value)}
-            title="Persona"
-            className="header-select"
+          <button
+            type="button"
+            className="persona-header-btn"
+            title="Switch persona"
+            onClick={() => setPersonaPickerOpen(true)}
           >
-            {personas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.emoji} {p.name}
-              </option>
-            ))}
-          </select>
+            {(() => {
+              const active = personas.find((p) => p.id === settings.personaId) ?? personas[0];
+              return active ? (
+                <>
+                  <span className="persona-header-emoji">{active.emoji}</span>
+                  <span className="persona-header-name">{active.name}</span>
+                  <span className="persona-header-chev">▾</span>
+                </>
+              ) : <span className="persona-header-name">Pick persona</span>;
+            })()}
+          </button>
           <select
             value={settings.model}
             onChange={(e) => onModelChange(e.target.value)}
@@ -406,13 +467,20 @@ export function Panel(props: PanelProps) {
                 )}
               </div>
             )}
-            {messages.map((m, i) => (
-              <Message
-                key={m.id}
-                message={m}
-                streaming={i === messages.length - 1 && m.role === 'assistant' && !m.content}
-              />
-            ))}
+            {messages.map((m, i) => {
+              const isLastAssistant =
+                m.role === 'assistant' &&
+                i === messages.length - 1;
+              return (
+                <Message
+                  key={m.id}
+                  message={m}
+                  streaming={isLastAssistant && !m.content}
+                  onRegenerate={isLastAssistant && m.content ? onRegenerateLast : undefined}
+                  onFork={m.role === 'assistant' && m.content && onForkFromMessage ? () => onForkFromMessage(m.id) : undefined}
+                />
+              );
+            })}
           </div>
 
           <Composer
@@ -425,6 +493,15 @@ export function Panel(props: PanelProps) {
           />
         </div>
       </div>
+      {personaPickerOpen && (
+        <PersonaPicker
+          personas={personas}
+          currentId={settings.personaId}
+          onSelect={(id) => onPersonaChange(id)}
+          onClose={() => setPersonaPickerOpen(false)}
+        />
+      )}
+      {shortcutHelpOpen && <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />}
     </section>
   );
 }

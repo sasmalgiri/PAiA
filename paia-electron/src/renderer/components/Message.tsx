@@ -10,9 +10,11 @@ import { api } from '../lib/api';
 interface MessageProps {
   message: DbMessage;
   streaming?: boolean;
+  onRegenerate?: () => void;
+  onFork?: () => void;
 }
 
-export function Message({ message, streaming }: MessageProps) {
+export function Message({ message, streaming, onRegenerate, onFork }: MessageProps) {
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
   // After every render, attach copy buttons to <pre> blocks. We do this
@@ -81,17 +83,21 @@ export function Message({ message, streaming }: MessageProps) {
   }
 
   // assistant
-  return <AssistantMessage message={message} streaming={streaming} bodyRef={bodyRef} />;
+  return <AssistantMessage message={message} streaming={streaming} bodyRef={bodyRef} onRegenerate={onRegenerate} onFork={onFork} />;
 }
 
 function AssistantMessage({
   message,
   streaming,
   bodyRef,
+  onRegenerate,
+  onFork,
 }: {
   message: DbMessage;
   streaming?: boolean;
   bodyRef: React.MutableRefObject<HTMLDivElement | null>;
+  onRegenerate?: () => void;
+  onFork?: () => void;
 }) {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [savedLessons, setSavedLessons] = useState<number | null>(null);
@@ -107,6 +113,10 @@ function AssistantMessage({
     });
     return () => { cancelled = true; };
   }, [message.id, hasRealId]);
+
+  async function copyMessage(text: string): Promise<void> {
+    try { await navigator.clipboard.writeText(text); } catch { /* silently ignore — permission blocked */ }
+  }
 
   async function rate(kind: 'up' | 'down'): Promise<void> {
     if (!hasRealId || streaming) return;
@@ -132,26 +142,41 @@ function AssistantMessage({
         dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content || (streaming ? '…' : '')) }}
       />
       {hasRealId && !streaming && (
-        <div className="msg-feedback">
-          <button
-            type="button"
-            className={`msg-feedback-btn ${feedback === 'up' ? 'active' : ''}`}
-            aria-label="Helpful"
-            title="Helpful"
-            onClick={() => void rate('up')}
-          >👍</button>
-          <button
-            type="button"
-            className={`msg-feedback-btn ${feedback === 'down' ? 'active down' : ''}`}
-            aria-label="Not helpful"
-            title="Not helpful — PAiA will extract what went wrong"
-            onClick={() => void rate('down')}
-          >👎</button>
-          {savedLessons !== null && (
-            <span className="msg-feedback-note">
-              Learned {savedLessons} lesson{savedLessons === 1 ? '' : 's'}.
-            </span>
-          )}
+        <div className="msg-actions-row">
+          <div className="msg-feedback">
+            <button
+              type="button"
+              className={`msg-feedback-btn ${feedback === 'up' ? 'active' : ''}`}
+              aria-label="Helpful"
+              title="Helpful"
+              onClick={() => void rate('up')}
+            >👍</button>
+            <button
+              type="button"
+              className={`msg-feedback-btn ${feedback === 'down' ? 'active down' : ''}`}
+              aria-label="Not helpful"
+              title="Not helpful — PAiA will extract what went wrong"
+              onClick={() => void rate('down')}
+            >👎</button>
+            {savedLessons !== null && (
+              <span className="msg-feedback-note">
+                Learned {savedLessons} lesson{savedLessons === 1 ? '' : 's'}.
+              </span>
+            )}
+          </div>
+          <div className="msg-actions">
+            <button
+              type="button"
+              title="Copy response"
+              onClick={() => void copyMessage(message.content)}
+            >Copy</button>
+            {onFork && (
+              <button type="button" title="Fork a new thread from this point" onClick={onFork}>Fork</button>
+            )}
+            {onRegenerate && (
+              <button type="button" title="Regenerate — delete this reply and try again" onClick={onRegenerate}>↻</button>
+            )}
+          </div>
         </div>
       )}
     </div>

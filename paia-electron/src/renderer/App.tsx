@@ -33,6 +33,9 @@ import { Canvas } from './components/Canvas';
 import { TeacherDashboard, StudentLock } from './components/Classroom';
 import { CommandPalette } from './components/CommandPalette';
 import { AmbientToast } from './components/AmbientToast';
+import { LearnedToast } from './components/LearnedToast';
+import { ShortcutHelp } from './components/ShortcutHelp';
+import { friendlyError, type FriendlyError } from './lib/errors';
 import { UpgradePrompt, detectUpgradeError, type UpgradeInfo } from './components/UpgradePrompt';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
 import { InputModal } from './components/InputModal';
@@ -99,7 +102,15 @@ export function App() {
   }, []);
 
   // Global keyboard shortcuts. Ctrl/⌘+K for the command palette,
-  // Ctrl/⌘+, for Settings (matches VS Code / Obsidian convention).
+  // Ctrl/⌘+, for Settings, bare `?` for the shortcut help (unless the
+  // user is typing into an input/textarea/contentEditable).
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
+  const [chatError, setChatError] = useState<FriendlyError | null>(null);
+  useEffect(() => {
+    if (!chatError) return;
+    const t = setTimeout(() => setChatError(null), 8000);
+    return () => clearTimeout(t);
+  }, [chatError]);
   useEffect(() => {
     function onKey(e: KeyboardEvent): void {
       const mod = e.metaKey || e.ctrlKey;
@@ -111,6 +122,11 @@ export function App() {
         void switchView('settings');
       } else if (e.key === 'Escape' && paletteOpen) {
         setPaletteOpen(false);
+      } else if (e.key === '?' && !mod) {
+        const t = e.target as HTMLElement | null;
+        const tag = t?.tagName?.toLowerCase();
+        const typing = tag === 'input' || tag === 'textarea' || t?.isContentEditable;
+        if (!typing) { e.preventDefault(); setShortcutHelpOpen(true); }
       }
     }
     window.addEventListener('keydown', onKey);
@@ -475,13 +491,21 @@ export function App() {
       });
 
       try {
-        await api.chatSend({
+        const result = await api.chatSend({
           threadId: thread.id,
           model,
           systemPrompt,
           userText: text,
           attachments,
         });
+        if (result && result.ok === false) {
+          // Main returned a structured failure — surface it with a friendly
+          // message rather than letting the optimistic bubble hang empty.
+          const f = friendlyError(result.error);
+          setMessages(await api.listMessages(thread.id));
+          setChatError(f);
+          return;
+        }
         // Replace the optimistic exchange with the persisted one.
         const real = await api.listMessages(thread.id);
         setMessages(real);
@@ -506,6 +530,38 @@ export function App() {
     },
     [settings, currentThread, personas, messages.length, refreshThreads, persistSettings],
   );
+
+  // Regenerate the last assistant message in the current thread: find
+  // the most recent user turn, trim everything after it, and re-run
+  // chat-send with the same user text.
+  const regenerateLast = useCallback(async (): Promise<void> => {
+    if (!currentThread) return;
+    const msgs = await api.listMessages(currentThread.id);
+    let lastUser = null as DbMessage | null;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === 'user') { lastUser = msgs[i]; break; }
+    }
+    if (!lastUser) return;
+    await api.trimMessagesAfter({ threadId: currentThread.id, fromMessageId: lastUser.id });
+    setMessages(await api.listMessages(currentThread.id));
+    await sendMessage(lastUser.content, []);
+  }, [currentThread, sendMessage]);
+
+  // Fork the current thread at a chosen message — creates a new thread
+  // with history up to and including that message, then switches to it.
+  const forkFromMessage = useCallback(async (messageId: string): Promise<void> => {
+    if (!currentThread) return;
+    const forked = await api.forkThread({
+      sourceThreadId: currentThread.id,
+      untilMessageId: messageId,
+      title: `${currentThread.title} (fork)`,
+    });
+    if (!forked) return;
+    await refreshThreads();
+    setCurrentThread(forked);
+    setMessages(await api.listMessages(forked.id));
+    await persistSettings({ currentThreadId: forked.id });
+  }, [currentThread, refreshThreads, persistSettings]);
 
   // ── render ────────────────────────────────────────────────────
   if (!settings) return null; // brief flash before settings load
@@ -534,6 +590,8 @@ export function App() {
           onStartAgent={(goal) => void startAgent(goal)}
           onStartResearch={(q) => void startResearch(q)}
           onOpenCanvas={() => setCanvasOpen(true)}
+          onRegenerateLast={() => void regenerateLast()}
+          onForkFromMessage={(mid) => void forkFromMessage(mid)}
         />
       )}
 
@@ -696,6 +754,15 @@ export function App() {
             }}
             aria-label="Dismiss"
           >×</button>
+        </div>
+      )}
+
+      <LearnedToast onOpenMemory={() => void switchView('settings')} />
+      {shortcutHelpOpen && <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />}
+      {chatError && (
+        <div className="chat-error-toast" role="alert" onClick={() => setChatError(null)}>
+          <div className="chat-error-title">{chatError.title}</div>
+          {chatError.hint && <div className="chat-error-hint">{chatError.hint}</div>}
         </div>
       )}
 
