@@ -126,24 +126,25 @@ async function analyzeFem(args) {
   const femPath = asString(args.fem_path, 'fem_path');
   if (!fs.existsSync(femPath)) throw new Error(`fem_path does not exist: ${femPath}`);
   const problem = (args.problem_type || 'magnetic').toLowerCase();
-  const openFn = {
-    magnetic: 'open',          // mi_* API
-    electrostatic: 'open',     // ei_*
-    heatflow: 'open',          // hi_*
-    currentflow: 'open',       // ci_*
-  }[problem] ?? 'open';
-  void openFn;
-  // A generic "load → analyze → close" pattern that works for any mi_/ei_/hi_/ci_
-  // problem type because the solver is dispatched by file extension.
+  // FEMM's Lua API prefixes are per-problem-class, not per-call. The pre/post
+  // processor pairs are { magnetic: (mi_, mo_), electrostatic: (ei_, eo_),
+  // heatflow: (hi_, ho_), currentflow: (ci_, co_) }.
+  const api = {
+    magnetic:       { pre: 'mi', post: 'mo' },
+    electrostatic:  { pre: 'ei', post: 'eo' },
+    heatflow:       { pre: 'hi', post: 'ho' },
+    currentflow:    { pre: 'ci', post: 'co' },
+  }[problem];
+  if (!api) throw new Error(`Unsupported problem_type: ${problem}`);
+  const esc = femPath.replace(/\\/g, '\\\\');
   const lua = `
-newdocument(0)
-open("${femPath.replace(/\\/g, '\\\\')}")
-mi_saveas("${femPath.replace(/\\/g, '\\\\')}")
-mi_analyze()
-mi_loadsolution()
+open("${esc}")
+${api.pre}_saveas("${esc}")
+${api.pre}_analyze()
+${api.pre}_loadsolution()
 print("[PAiA] analysis complete")
-mo_close()
-mi_close()
+${api.post}_close()
+${api.pre}_close()
   `.trim();
   const res = await runLuaSource(lua);
   return JSON.stringify(res, null, 2);

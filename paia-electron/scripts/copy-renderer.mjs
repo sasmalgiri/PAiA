@@ -50,3 +50,12 @@ if (existsSync(katexCssSrc)) {
     console.log('copied katex fonts');
   }
 }
+
+// Excalidraw ships its toolbar/canvas CSS separately. Copy the production
+// bundle so the whiteboard artifact renders with its UI chrome intact.
+const excalidrawCssSrc = join(projectRoot, 'node_modules', '@excalidraw', 'excalidraw', 'dist', 'prod', 'index.css');
+const excalidrawCssDst = join(outDir, 'excalidraw.min.css');
+if (existsSync(excalidrawCssSrc)) {
+  await copyFile(excalidrawCssSrc, excalidrawCssDst);
+  console.log('copied excalidraw.min.css');
+}

@@ -141,7 +141,10 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
               </div>
               {selected.kind === 'whiteboard' ? (
                 <div className="canvas-view canvas-whiteboard">
-                  <Whiteboard value={selected.content} onChange={(n) => void saveWhiteboard(n)} />
+                  {/* key={selected.id} forces Excalidraw to remount on
+                      artifact switch so initialData reflects the newly-
+                      selected whiteboard rather than the one it opened with. */}
+                  <Whiteboard key={selected.id} value={selected.content} onChange={(n) => void saveWhiteboard(n)} />
                 </div>
               ) : editing ? (
                 <textarea

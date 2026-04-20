@@ -550,7 +550,7 @@ export interface ToolDefinition {
   /** Risk tier — governs whether auto-approve can apply. */
   risk: 'safe' | 'low' | 'medium' | 'high';
   /** Tag surfaced in the UI (so users can filter/pre-approve by family). */
-  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp' | 'desktop';
+  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp' | 'desktop' | 'cad-sim';
 }
 
 export type AgentAutonomy = 'manual' | 'assisted' | 'autonomous';

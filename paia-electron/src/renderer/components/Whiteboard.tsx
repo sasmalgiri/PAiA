@@ -9,6 +9,17 @@ const Excalidraw = lazy(() =>
   import('@excalidraw/excalidraw').then((m) => ({ default: m.Excalidraw })),
 );
 
+// Excalidraw sets data-theme on the root for dark/light. PAiA does the
+// same ("data-theme" attr), so we read from there rather than an
+// assumed class name.
+function detectDark(): boolean {
+  const attr = document.documentElement.getAttribute('data-theme');
+  if (attr === 'light') return false;
+  if (attr === 'dark') return true;
+  return typeof window !== 'undefined'
+    && !window.matchMedia?.('(prefers-color-scheme: light)').matches;
+}
+
 interface Props {
   value: string;
   onChange: (next: string) => void;
@@ -38,15 +49,11 @@ function parseScene(raw: string): Scene {
 export function Whiteboard({ value, onChange, readOnly }: Props) {
   const initial = useMemo(() => parseScene(value), []); // eslint-disable-line react-hooks/exhaustive-deps
   const latestRef = useRef<string>(value);
-  const [isDark, setIsDark] = useState(
-    () => !document.documentElement.classList.contains('light'),
-  );
+  const [isDark, setIsDark] = useState(detectDark);
 
   useEffect(() => {
-    const obs = new MutationObserver(() => {
-      setIsDark(!document.documentElement.classList.contains('light'));
-    });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    const obs = new MutationObserver(() => setIsDark(detectDark()));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     return () => obs.disconnect();
   }, []);
 

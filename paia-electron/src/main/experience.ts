@@ -34,7 +34,6 @@ import * as providers from './providers';
 const DEBOUNCE_MS = 20_000;
 const WINDOW_MESSAGES = 6;
 const MIN_GAP_BETWEEN_REFLECTIONS_MS = 60_000; // per-thread rate limit
-const DEDUP_THRESHOLD = 0.92; // cosine; above this we treat memories as duplicates
 
 const pendingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 const lastReflectionAt = new Map<string, number>();
@@ -46,47 +45,34 @@ interface ExtractedLesson {
 }
 
 function localChatModel(): string | null {
-  // Prefer the first Ollama-qualified model from settings. If the user is
-  // running on cloud-only, we skip reflection (don't exfiltrate turns).
+  // Pick the local (Ollama) model for reflection. If the user is running
+  // on cloud-only we skip — we never exfiltrate turns to a third party
+  // the user hasn't already consented to.
+  //
+  // Accepts:
+  //   - "ollama:<name>"    (qualified)
+  //   - "<name>"           (legacy / unqualified — treated as ollama)
+  //   - anything else      → skip
   const s = settingsStore.load();
-  if (s.model?.startsWith('ollama:')) return s.model;
-  return null;
-}
-
-function cosineSim(a: number[], b: number[]): number {
-  if (a.length !== b.length || a.length === 0) return 0;
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    na += a[i] * a[i];
-    nb += b[i] * b[i];
-  }
-  const denom = Math.sqrt(na) * Math.sqrt(nb);
-  return denom === 0 ? 0 : dot / denom;
+  const m = s.model;
+  if (!m || typeof m !== 'string') return null;
+  if (m.startsWith('ollama:')) return m;
+  // Cloud provider prefixes that should always skip reflection.
+  if (m.startsWith('openai:') || m.startsWith('anthropic:') || m.startsWith('openai-compatible:')) return null;
+  // Bare model name — upgrade to ollama:<name>. providers.parseQualified()
+  // treats unqualified strings as ollama, so this stays consistent.
+  return `ollama:${m}`;
 }
 
 async function isDuplicateMemory(candidate: string): Promise<MemoryEntry | null> {
+  // v1 dedup: case-insensitive exact-text match among the top semantic
+  // hits. Good enough to stop "user prefers concise replies" from landing
+  // twice; not a substitute for proper embedding comparison (future work).
   try {
-    // reuse the embed routine via memory.recall so we cache the model load.
     const hits = await memorySvc.recall(candidate, 3);
-    if (hits.length === 0) return null;
-    // If the hit text is basically the candidate, treat as duplicate
-    // without needing an embedding comparison.
+    const needle = candidate.trim().toLowerCase();
     for (const h of hits) {
-      if (h.text.trim().toLowerCase() === candidate.trim().toLowerCase()) return h;
-    }
-    // Otherwise compare embeddings.
-    const candEmbed = hits[0].embedding ? await memorySvc.recall(candidate, 1) : null;
-    void candEmbed; // best-effort; skip if embeddings unavailable
-    for (const h of hits) {
-      if (!h.embedding) continue;
-      // We don't have the candidate's embedding directly here; approximate
-      // with the top hit's similarity to itself against the candidate text
-      // length. In practice the substring check above catches the common
-      // near-duplicate case. Fall through to non-duplicate on fuzzy cases.
-      void cosineSim;
+      if (h.text.trim().toLowerCase() === needle) return h;
     }
     return null;
   } catch {

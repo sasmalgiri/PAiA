@@ -90,7 +90,8 @@ export async function keyboardType(text: string): Promise<void> {
 
 // Map common human-readable key names to the Key enum. We deliberately
 // limit the surface to what the Agent realistically needs, rather than
-// exposing every key.
+// exposing every key. The Key enum in nut-js uses title-case names
+// ("LeftControl", "A", "F5", "Num1"), so we normalise aggressively.
 async function resolveKeys(keys: string[]): Promise<number[]> {
   const { Key } = await loadNut();
   const KeyAny = Key as unknown as Record<string, number>;
@@ -121,12 +122,37 @@ async function resolveKeys(keys: string[]): Promise<number[]> {
     left: 'Left',
     right: 'Right',
   };
-  return keys.map((k) => {
-    const canon = aliases[k.toLowerCase()] ?? k;
-    const code = KeyAny[canon];
-    if (typeof code !== 'number') throw new Error(`Unknown key: ${k}`);
-    return code;
-  });
+  function resolve(k: string): number {
+    const low = k.toLowerCase();
+    const aliased = aliases[low];
+    if (aliased !== undefined) {
+      const code = KeyAny[aliased];
+      if (typeof code === 'number') return code;
+    }
+    // Single letter → uppercase ("a" → "A").
+    if (k.length === 1 && /[a-zA-Z]/.test(k)) {
+      const code = KeyAny[k.toUpperCase()];
+      if (typeof code === 'number') return code;
+    }
+    // Single digit → "Num1" etc.
+    if (/^\d$/.test(k)) {
+      const code = KeyAny[`Num${k}`];
+      if (typeof code === 'number') return code;
+    }
+    // Function key: "f1" → "F1".
+    if (/^f(\d{1,2})$/i.test(k)) {
+      const code = KeyAny[`F${k.slice(1)}`];
+      if (typeof code === 'number') return code;
+    }
+    // Last resort: try the raw string + title-cased.
+    const raw = KeyAny[k];
+    if (typeof raw === 'number') return raw;
+    const titled = k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
+    const t = KeyAny[titled];
+    if (typeof t === 'number') return t;
+    throw new Error(`Unknown key: ${k}`);
+  }
+  return keys.map(resolve);
 }
 
 export async function keyboardShortcut(keys: string[]): Promise<void> {

@@ -42,6 +42,16 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// PAiA sets data-theme="light"|"dark" on <html> for explicit themes, and
+// removes the attribute entirely in "system" mode. Detect accordingly.
+function isLightMode(): boolean {
+  const attr = document.documentElement.getAttribute('data-theme');
+  if (attr === 'light') return true;
+  if (attr === 'dark') return false;
+  return typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-color-scheme: light)').matches === true;
+}
+
 function renderMath(latex: string, displayMode: boolean): string {
   try {
     return katex.renderToString(latex, {
@@ -57,11 +67,12 @@ function renderMath(latex: string, displayMode: boolean): string {
   }
 }
 
-// Custom renderer: replace fenced code blocks tagged `mermaid` / `smiles`
-// with placeholder <div>s that the post-mount pass will turn into SVG.
+// Custom renderer: replace fenced code blocks tagged `mermaid` / `smiles` /
+// `math` with special placeholders. For every other language, delegate back
+// to marked-highlight's default so normal code still gets syntax coloring.
 marked.use({
   renderer: {
-    code(this: unknown, token: Tokens.Code) {
+    code(this: { parser?: { options?: unknown } } | unknown, token: Tokens.Code): string {
       const lang = (token.lang ?? '').trim().toLowerCase();
       const raw = token.text;
       if (lang === 'mermaid') {
@@ -73,8 +84,12 @@ marked.use({
       if (lang === 'math' || lang === 'latex') {
         return `<div class="math-block">${renderMath(raw, true)}</div>`;
       }
-      // Fall through to default code rendering.
-      return false as unknown as string;
+      // Default path — replicate marked-highlight's output shape: a <pre>
+      // wrapping a <code> with `hljs language-XXX` so our CSS picks it up.
+      // The `highlight()` callback at the top of the file already produced
+      // the highlighted HTML fragment when marked ran the tokenizer.
+      const cls = lang ? `hljs language-${escapeHtml(lang)}` : 'hljs';
+      return `<pre><code class="${cls}">${token.escaped ? raw : escapeHtml(raw)}</code></pre>`;
     },
   },
 });
@@ -130,7 +145,7 @@ async function ensureMermaid(): Promise<typeof import('mermaid').default> {
     mermaidInitPromise = Promise.resolve().then(() => {
       mod.default.initialize({
         startOnLoad: false,
-        theme: document.documentElement.classList.contains('light') ? 'neutral' : 'dark',
+        theme: isLightMode() ? 'neutral' : 'dark',
         securityLevel: 'strict',
         fontFamily: 'inherit',
       });
@@ -179,7 +194,7 @@ export async function renderDiagramsInside(root: HTMLElement): Promise<void> {
   if (smilesBlocks.length > 0) {
     try {
       const sd = await ensureSmiles();
-      const theme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+      const theme = isLightMode() ? 'light' : 'dark';
       for (const block of Array.from(smilesBlocks)) {
         const src = (block.getAttribute('data-source') ?? '').trim();
         try {

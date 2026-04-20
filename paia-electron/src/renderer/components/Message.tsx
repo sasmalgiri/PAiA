@@ -50,7 +50,7 @@ export function Message({ message, streaming }: MessageProps) {
     if (!streaming) {
       void renderDiagramsInside(el);
     }
-  });
+  }, [message.id, message.content, streaming]);
 
   if (message.role === 'system') {
     return <div className={`msg system`}>{message.content}</div>;
