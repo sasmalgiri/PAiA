@@ -8,6 +8,7 @@ import type { Artifact } from '../../shared/types';
 import { api } from '../lib/api';
 import { renderMarkdown, renderDiagramsInside } from '../lib/markdown';
 import { InputModal } from './InputModal';
+import { Whiteboard } from './Whiteboard';
 
 interface Props {
   threadId: string | null;
@@ -20,7 +21,7 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
   const [selected, setSelected] = useState<Artifact | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
-  const [titlePromptOpen, setTitlePromptOpen] = useState(false);
+  const [titlePromptOpen, setTitlePromptOpen] = useState<false | 'code' | 'whiteboard'>(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   async function refresh(): Promise<void> {
@@ -62,17 +63,30 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
     await navigator.clipboard.writeText(selected.content);
   }
 
-  async function createArtifactWithTitle(title: string): Promise<void> {
+  async function createArtifactWithTitle(title: string, kind: 'code' | 'whiteboard' = 'code'): Promise<void> {
     const created = await api.artifactsCreate({
       threadId,
       title,
-      kind: 'code',
-      language: 'txt',
-      content: '',
+      kind,
+      language: kind === 'whiteboard' ? 'excalidraw' : 'txt',
+      content: kind === 'whiteboard' ? '{"elements":[],"appState":{}}' : '',
     });
     await refresh();
     setSelected(created);
-    setEditing(true);
+    // Whiteboards edit live; text artifacts open in edit mode.
+    setEditing(kind !== 'whiteboard');
+  }
+
+  // Whiteboards autosave as the user draws — we keep a debounce so rapid
+  // pointer moves don't hammer the DB.
+  const whiteboardSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  async function saveWhiteboard(next: string): Promise<void> {
+    if (!selected) return;
+    if (whiteboardSaveTimerRef.current) clearTimeout(whiteboardSaveTimerRef.current);
+    whiteboardSaveTimerRef.current = setTimeout(async () => {
+      const updated = await api.artifactsUpdate(selected.id, next);
+      if (updated) setSelected(updated);
+    }, 400);
   }
 
   return (
@@ -80,7 +94,8 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
       <header className="canvas-header">
         <strong>Canvas</strong>
         <div className="canvas-header-actions">
-          <button type="button" className="secondary" onClick={() => setTitlePromptOpen(true)}>+ New</button>
+          <button type="button" className="secondary" onClick={() => setTitlePromptOpen('code')}>+ New</button>
+          <button type="button" className="secondary" onClick={() => setTitlePromptOpen('whiteboard')} title="New whiteboard">+ Whiteboard</button>
           <button type="button" className="icon-btn" onClick={onClose}>×</button>
         </div>
       </header>
@@ -124,7 +139,11 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
                   </>
                 )}
               </div>
-              {editing ? (
+              {selected.kind === 'whiteboard' ? (
+                <div className="canvas-view canvas-whiteboard">
+                  <Whiteboard value={selected.content} onChange={(n) => void saveWhiteboard(n)} />
+                </div>
+              ) : editing ? (
                 <textarea
                   ref={textareaRef}
                   value={draft}
@@ -157,14 +176,15 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
       </div>
       {titlePromptOpen && (
         <InputModal
-          title="New artifact"
-          description="Name this draft. You can change it later."
-          placeholder="e.g. Marketing brief v1"
+          title={titlePromptOpen === 'whiteboard' ? 'New whiteboard' : 'New artifact'}
+          description={titlePromptOpen === 'whiteboard' ? 'Name this whiteboard. Drawing autosaves as you go.' : 'Name this draft. You can change it later.'}
+          placeholder={titlePromptOpen === 'whiteboard' ? 'e.g. Motor winding v1' : 'e.g. Marketing brief v1'}
           submitLabel="Create"
           onCancel={() => setTitlePromptOpen(false)}
           onSubmit={async (title) => {
+            const kind = titlePromptOpen;
             setTitlePromptOpen(false);
-            await createArtifactWithTitle(title);
+            if (kind) await createArtifactWithTitle(title, kind);
           }}
         />
       )}

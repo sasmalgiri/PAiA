@@ -29,6 +29,7 @@ import * as screenSvc from './screen';
 import * as ragSvc from './rag';
 import * as db from './db';
 import * as memorySvc from './memory';
+import * as desktop from './desktopControl';
 import { getActiveWindow } from './activeWindow';
 import { logger } from './logger';
 
@@ -547,6 +548,147 @@ const artifactUpdateTool: ToolHandler = {
   },
 };
 
+// ─── desktop automation (OS-level mouse/keyboard) ──────────────────
+//
+// High-risk. The `assertEnabled()` guard inside desktopControl will throw
+// if `settings.osAutomationEnabled` is false, so these tools no-op safely
+// until the user opts in.
+
+const desktopMoveMouseTool: ToolHandler = {
+  definition: {
+    name: 'desktop.move_mouse',
+    description: 'Move the OS mouse cursor to absolute screen coordinates (x, y). Off by default; requires Settings → Privacy → OS automation.',
+    category: 'desktop',
+    risk: 'high',
+    inputSchema: {
+      type: 'object',
+      properties: { x: { type: 'number' }, y: { type: 'number' } },
+      required: ['x', 'y'],
+    },
+  },
+  async execute(args) {
+    const x = asOptNumber(args.x);
+    const y = asOptNumber(args.y);
+    if (x === undefined || y === undefined) throw new Error('x and y are required numbers');
+    await desktop.mouseMove(x, y);
+    return `Moved cursor to (${x}, ${y})`;
+  },
+};
+
+const desktopClickTool: ToolHandler = {
+  definition: {
+    name: 'desktop.click',
+    description: 'Click the OS mouse at its current position. button is one of left|right|middle (default left). double=true for a double click.',
+    category: 'desktop',
+    risk: 'high',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        button: { type: 'string', enum: ['left', 'right', 'middle'] },
+        double: { type: 'boolean' },
+      },
+    },
+  },
+  async execute(args) {
+    const button = (asOptString(args.button) ?? 'left') as 'left' | 'right' | 'middle';
+    const double = args.double === true;
+    if (double) await desktop.mouseDoubleClick(button);
+    else await desktop.mouseClick(button);
+    return `${double ? 'Double-clicked' : 'Clicked'} ${button}`;
+  },
+};
+
+const desktopScrollTool: ToolHandler = {
+  definition: {
+    name: 'desktop.scroll',
+    description: 'Scroll the OS mouse wheel. direction=up|down|left|right, amount = number of ticks (1–50).',
+    category: 'desktop',
+    risk: 'high',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        direction: { type: 'string', enum: ['up', 'down', 'left', 'right'] },
+        amount: { type: 'number' },
+      },
+      required: ['direction', 'amount'],
+    },
+  },
+  async execute(args) {
+    const direction = asString(args.direction, 'direction') as 'up' | 'down' | 'left' | 'right';
+    const amount = asOptNumber(args.amount, 3) ?? 3;
+    await desktop.mouseScroll(direction, amount);
+    return `Scrolled ${direction} by ${amount}`;
+  },
+};
+
+const desktopTypeTool: ToolHandler = {
+  definition: {
+    name: 'desktop.type',
+    description: 'Type text into whatever app currently has keyboard focus. Clamped to 4000 characters.',
+    category: 'desktop',
+    risk: 'high',
+    inputSchema: {
+      type: 'object',
+      properties: { text: { type: 'string' } },
+      required: ['text'],
+    },
+  },
+  async execute(args) {
+    const text = asString(args.text, 'text');
+    await desktop.keyboardType(text);
+    return `Typed ${text.length} characters`;
+  },
+};
+
+const desktopShortcutTool: ToolHandler = {
+  definition: {
+    name: 'desktop.shortcut',
+    description: 'Press a key combination (e.g. ["ctrl","c"] or ["cmd","shift","t"]). Max 6 keys. Common aliases: ctrl, cmd, alt, shift, enter, esc, tab, up/down/left/right, pageup, pagedown.',
+    category: 'desktop',
+    risk: 'high',
+    inputSchema: {
+      type: 'object',
+      properties: { keys: { type: 'array', items: { type: 'string' } } },
+      required: ['keys'],
+    },
+  },
+  async execute(args) {
+    const raw = args.keys;
+    if (!Array.isArray(raw)) throw new Error('keys must be an array of strings');
+    const keys = raw.map((k, i) => { if (typeof k !== 'string') throw new Error(`keys[${i}] must be a string`); return k; });
+    await desktop.keyboardShortcut(keys);
+    return `Sent shortcut: ${keys.join('+')}`;
+  },
+};
+
+const desktopMousePosTool: ToolHandler = {
+  definition: {
+    name: 'desktop.mouse_position',
+    description: 'Return the current OS mouse cursor position (absolute screen coords).',
+    category: 'desktop',
+    risk: 'medium',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  async execute() {
+    const p = await desktop.mousePosition();
+    return JSON.stringify(p);
+  },
+};
+
+const desktopScreenSizeTool: ToolHandler = {
+  definition: {
+    name: 'desktop.screen_size',
+    description: 'Return the primary display resolution in pixels.',
+    category: 'desktop',
+    risk: 'low',
+    inputSchema: { type: 'object', properties: {} },
+  },
+  async execute() {
+    const s = await desktop.screenSize();
+    return JSON.stringify(s);
+  },
+};
+
 // ─── registry ──────────────────────────────────────────────────────
 
 export const builtInTools: ToolHandler[] = [
@@ -567,6 +709,13 @@ export const builtInTools: ToolHandler[] = [
   memoryRecallTool,
   artifactCreateTool,
   artifactUpdateTool,
+  desktopMoveMouseTool,
+  desktopClickTool,
+  desktopScrollTool,
+  desktopTypeTool,
+  desktopShortcutTool,
+  desktopMousePosTool,
+  desktopScreenSizeTool,
 ];
 
 const handlerMap = new Map<string, ToolHandler>();

@@ -72,6 +72,7 @@ const DEFAULTS: Settings = {
   voiceContinuous: false,
 
   pluginsEnabled: false,
+  osAutomationEnabled: false,
 
   notificationsEnabled: true,
 

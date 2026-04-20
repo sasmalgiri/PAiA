@@ -316,6 +316,17 @@ function GeneralTab({ settings, onSave }: { settings: Settings; onSave: (p: Part
         check sends only your platform and current version — no usage data, no
         IDs. Disable if you prefer to update PAiA manually.
       </p>
+      <label className="field row">
+        <span>Allow OS-level mouse &amp; keyboard control</span>
+        <input type="checkbox" checked={settings.osAutomationEnabled} onChange={(e) => onSave({ osAutomationEnabled: e.target.checked })} />
+      </label>
+      <p className="muted-note" style={{ color: 'var(--danger, #d66)' }}>
+        <strong>High-risk.</strong> Turns on the <code>desktop.*</code> agent tools — move the
+        cursor, click, type, send keyboard shortcuts across any app on this machine.
+        Even with this on, each individual action still goes through the agent
+        autonomy prompt. Leave off unless you're actively using PAiA to automate
+        desktop workflows.
+      </p>
     </div>
   );
 }

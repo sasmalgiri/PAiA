@@ -27,8 +27,10 @@
     "signing:check:strict": "node scripts/check-signing.mjs --strict"
   },
   "dependencies": {
+    "@excalidraw/excalidraw": "^0.18.0",
     "@huggingface/transformers": "^4.0.1",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@nut-tree-fork/nut-js": "^4.2.6",
     "@sentry/electron": "^7.11.0",
     "electron-log": "^5.2.4",
     "electron-updater": "^6.3.9",
@@ -72,7 +74,12 @@
       "node_modules/onnxruntime-common/**",
       "node_modules/sql.js/dist/**",
       "node_modules/tesseract.js/**",
-      "node_modules/tesseract.js-core/**"
+      "node_modules/tesseract.js-core/**",
+      "node_modules/@nut-tree-fork/**",
+      "node_modules/libnut/**",
+      "node_modules/libnut-win32/**",
+      "node_modules/libnut-darwin/**",
+      "node_modules/libnut-linux/**"
     ],
     "files": [
       "dist/**/*",

@@ -217,6 +217,12 @@ export interface Settings {
   // plugins
   pluginsEnabled: boolean;
 
+  // OS-level mouse/keyboard automation (off by default — high-risk).
+  // When true, the `desktop.*` tool family becomes available to the
+  // Agent. Even with this on, each desktop tool still goes through the
+  // autonomy gate (medium risk = prompt per call under 'ask-medium').
+  osAutomationEnabled: boolean;
+
   // notifications
   notificationsEnabled: boolean;
 
@@ -544,7 +550,7 @@ export interface ToolDefinition {
   /** Risk tier — governs whether auto-approve can apply. */
   risk: 'safe' | 'low' | 'medium' | 'high';
   /** Tag surfaced in the UI (so users can filter/pre-approve by family). */
-  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp';
+  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp' | 'desktop';
 }
 
 export type AgentAutonomy = 'manual' | 'assisted' | 'autonomous';
@@ -636,7 +642,7 @@ export interface ResearchProgress {
 
 // ─── artifacts / canvas ───────────────────────────────────────────
 
-export type ArtifactKind = 'code' | 'markdown' | 'html' | 'svg' | 'json';
+export type ArtifactKind = 'code' | 'markdown' | 'html' | 'svg' | 'json' | 'whiteboard';
 
 export interface Artifact {
   id: string;

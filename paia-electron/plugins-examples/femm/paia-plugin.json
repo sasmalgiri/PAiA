@@ -1,0 +1,15 @@
+{
+  "id": "femm",
+  "name": "FEMM — Finite Element Method Magnetics",
+  "version": "0.1.0",
+  "description": "Lets the Agent drive FEMM (finite-element magnetostatics / heat-flow / electrostatics) via its Lua scripting surface. Intended for motor, actuator, magnetic-circuit, and transformer design workflows. Windows only (or Wine on Linux/macOS).",
+  "author": "PAiA reference plugins",
+  "main": "index.js",
+  "contributes": {
+    "tools": [
+      "femm.run_lua",
+      "femm.analyze_fem",
+      "femm.compute_torque"
+    ]
+  }
+}
