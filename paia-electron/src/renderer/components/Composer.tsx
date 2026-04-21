@@ -41,6 +41,21 @@ interface SpeechRecognitionLike {
   stop(): void;
 }
 
+// Same list as Settings → Voice → Language, kept here so the composer can
+// offer a transient per-message override without plumbing a prop all the
+// way up.
+const VOICE_LANG_OPTIONS: { value: string; label: string }[] = [
+  { value: 'en-US', label: 'English (US)' },
+  { value: 'en-GB', label: 'English (UK)' },
+  { value: 'en-IN', label: 'English (India)' },
+  { value: 'hi-IN', label: 'Hindi' },
+  { value: 'es-ES', label: 'Spanish' },
+  { value: 'fr-FR', label: 'French' },
+  { value: 'de-DE', label: 'German' },
+  { value: 'ja-JP', label: 'Japanese' },
+  { value: 'zh-CN', label: 'Chinese' },
+];
+
 export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, onSend, onMetaCommand }: ComposerProps) {
   const { t } = useT();
   const [draft, setDraft] = useState('');
@@ -50,6 +65,34 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState(t('composer.hintRedacted'));
   const [dragOver, setDragOver] = useState(false);
+  // Transient voice-language override: when unset, we use the Settings
+  // default (`voiceLang`). When the user picks a different language in
+  // the composer, that choice sticks for the current session only.
+  const [transientVoiceLang, setTransientVoiceLang] = useState<string | null>(null);
+  const effectiveVoiceLang = transientVoiceLang ?? voiceLang;
+  // Whisper model download progress — shown in the hint area on first
+  // mic press so the user sees "downloading 45%" instead of nothing.
+  const [whisperDownload, setWhisperDownload] = useState<string | null>(null);
+  useEffect(() => {
+    const off = api.onWhisperDownloadProgress((p) => {
+      if (p.status === 'ready' || p.status === 'done') {
+        setWhisperDownload(null);
+        return;
+      }
+      if (p.status === 'downloading' || p.status === 'progress') {
+        const pct = typeof p.progress === 'number'
+          ? Math.round(p.progress * (p.progress <= 1 ? 100 : 1))
+          : (p.loaded && p.total ? Math.round((p.loaded / p.total) * 100) : null);
+        const file = p.file ? p.file.split('/').pop() : '';
+        setWhisperDownload(
+          pct !== null
+            ? `Downloading Whisper model… ${file ? file + ' ' : ''}${pct}%`
+            : `Downloading Whisper model${file ? ` (${file})` : ''}…`,
+        );
+      }
+    });
+    return off;
+  }, []);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const hasImageAttachment = attachments.some((a) => a.kind === 'image');
@@ -188,12 +231,18 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
         });
       } else if (isText) {
         const text = await file.text();
+        const TEXT_CAP = 200_000; // 200 KB inline cap — use RAG collections for larger docs
+        if (text.length > TEXT_CAP) {
+          setHint(
+            `${file.name} is ${(text.length / 1024).toFixed(0)} KB — only the first 200 KB was attached inline. For larger documents, create a RAG collection (paperclip menu → Manage collections) and ingest them there so they can be retrieved in full.`,
+          );
+        }
         next.push({
           kind: 'text',
           filename: file.name,
           mimeType: file.type || 'text/plain',
           sizeBytes: file.size,
-          content: text.slice(0, 200_000), // 200KB cap
+          content: text.slice(0, TEXT_CAP),
         });
       } else {
         setHint(`Unsupported file type: ${file.name}`);
@@ -231,7 +280,7 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
       return;
     }
     const r = new Ctor();
-    r.lang = voiceLang;
+    r.lang = effectiveVoiceLang;
     r.interimResults = true;
     // In duplex/continuous mode we don't end after the first silence —
     // the recognizer keeps running and we auto-submit on a trailing pause.
@@ -363,7 +412,7 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
     }
 
     setHint('Transcribing… (first run downloads the model)');
-    const result = await api.transcribe(pcm, voiceLang);
+    const result = await api.transcribe(pcm, effectiveVoiceLang);
     if (!result.ok) {
       setHint(`Whisper failed: ${result.error ?? 'unknown error'}`);
       return;
@@ -433,7 +482,7 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
             else setHint('Continuous voice — speak again or pause to send.');
           });
           try {
-            await api.transcribeStream(pcm16, voiceLang, streamId);
+            await api.transcribeStream(pcm16, effectiveVoiceLang, streamId);
           } catch (err) {
             clearTimeout(safetyTimeout);
             cleanup();
@@ -561,10 +610,31 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
         >
           🎙
         </button>
+        <select
+          className="voice-lang-picker"
+          value={effectiveVoiceLang}
+          onChange={(e) => setTransientVoiceLang(e.target.value === voiceLang ? null : e.target.value)}
+          title={transientVoiceLang
+            ? `Voice language for this session: ${effectiveVoiceLang} (default is ${voiceLang})`
+            : `Voice language: ${voiceLang}. Pick another to switch just for this session.`}
+          style={{
+            fontSize: 11,
+            padding: '2px 4px',
+            border: '1px solid var(--border)',
+            background: transientVoiceLang ? 'var(--accent-bg, #2a4365)' : 'var(--bg2)',
+            color: 'var(--text1)',
+            borderRadius: 4,
+            maxWidth: 90,
+          }}
+        >
+          {VOICE_LANG_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label.replace(/\s*\(.+\)$/, '')}</option>
+          ))}
+        </select>
         <button type="button" className="primary" onClick={submit}>{t('composer.send')}</button>
       </div>
 
-      <div className="hint">{hint}</div>
+      <div className="hint">{whisperDownload ?? hint}</div>
       {visionWarning && (
         <div className="vision-warn">
           ⚠ Selected model <code>{currentModel}</code> doesn't look like a vision model.

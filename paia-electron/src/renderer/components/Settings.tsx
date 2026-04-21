@@ -1648,6 +1648,26 @@ function ConnectorsTab() {
               <div className={`connector-status ${status.connected ? 'connected' : 'disconnected'}`}>
                 {status.connected ? `Connected as ${status.account || '(unknown)'}` : 'Not connected'}
               </div>
+              {status.connected && status.expiresAt && (
+                (() => {
+                  const remainingMs = status.expiresAt - Date.now();
+                  const hasRefresh = true; // token is still here; PAiA auto-refreshes 60s before expiry
+                  const mins = Math.floor(remainingMs / 60_000);
+                  const label =
+                    remainingMs < 0
+                      ? `⚠ Token expired ${Math.abs(mins)}m ago — next API call will try to refresh`
+                      : mins < 5
+                      ? `⚠ Token expires in ${mins}m — PAiA will refresh automatically`
+                      : mins < 60
+                      ? `Token expires in ${mins}m`
+                      : `Token expires ${new Date(status.expiresAt).toLocaleString()}`;
+                  return (
+                    <div className="connector-token-info" style={{ fontSize: 11, color: remainingMs < 5 * 60_000 ? 'var(--warn, #d4a017)' : 'var(--text3)', marginTop: 2 }}>
+                      {label}{hasRefresh ? '' : ' — no refresh token; reconnect when it expires'}
+                    </div>
+                  );
+                })()
+              )}
             </div>
             <div style={{ display: 'flex', gap: 6 }}>
               {status.connected ? (

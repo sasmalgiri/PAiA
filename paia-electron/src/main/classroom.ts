@@ -479,9 +479,30 @@ export async function studentJoin(opts: {
   const baseUrl = `http://${opts.host}:${opts.port}`;
 
   // Sanity-check that the teacher is actually reachable before we spin up
-  // the heartbeat loop.
-  const infoRes = await fetch(`${baseUrl}/classroom/info`, { signal: AbortSignal.timeout(8000) });
-  if (!infoRes.ok) throw new Error(`Teacher not reachable: HTTP ${infoRes.status}`);
+  // the heartbeat loop. Turn the usual failures (wrong LAN, firewall,
+  // teacher not running) into messages the student can actually act on.
+  let infoRes: Response;
+  try {
+    infoRes = await fetch(`${baseUrl}/classroom/info`, { signal: AbortSignal.timeout(8000) });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/abort|timeout/i.test(msg)) {
+      throw new Error(
+        `Couldn't reach teacher at ${opts.host}:${opts.port} within 8s. Check that you're on the same Wi-Fi and that the teacher has started the session. School Wi-Fi may also block port ${opts.port} — ask the teacher to try a different port from Classroom settings.`,
+      );
+    }
+    if (/ECONNREFUSED|ENOTFOUND|EHOSTUNREACH|network/i.test(msg)) {
+      throw new Error(
+        `Couldn't open a connection to ${opts.host}:${opts.port}. Either the host/port is wrong, the teacher stopped the session, or a firewall is blocking the connection. Ask the teacher to verify the join info shown in their PAiA window.`,
+      );
+    }
+    throw new Error(`Teacher not reachable at ${opts.host}:${opts.port}: ${msg}`);
+  }
+  if (!infoRes.ok) {
+    throw new Error(
+      `Teacher refused the connection (HTTP ${infoRes.status}). Double-check the 6-letter code and ask the teacher to re-share it.`,
+    );
+  }
 
   // The very first packet is signed with a code-only key (both sides can
   // derive without any shared state); the teacher returns the sessionId,

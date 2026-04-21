@@ -359,14 +359,27 @@ export async function synthesize(opts: SynthOptions): Promise<string> {
     proc.stdout.on('data', (c: Buffer) => chunks.push(c));
     proc.stderr.on('data', (c: Buffer) => errChunks.push(c));
 
-    proc.on('error', (err) => reject(err));
+    proc.on('error', (err) => {
+      // ENOENT on Linux usually means a missing system dep (piper statically
+      // links most things but a stripped-down distro may still be missing
+      // libstdc++6 / libsndfile1). Give the user a pointer instead of a
+      // bare `spawn piper ENOENT`.
+      const linuxHint =
+        process.platform === 'linux'
+          ? ' — on Debian/Ubuntu try: sudo apt install libstdc++6 libsndfile1'
+          : '';
+      reject(new Error(`${err.message}${linuxHint}`));
+    });
     proc.on('close', (code) => {
       if (code !== 0) {
-        reject(
-          new Error(
-            `Piper exited ${code}: ${Buffer.concat(errChunks).toString('utf-8').trim()}`,
-          ),
-        );
+        const stderr = Buffer.concat(errChunks).toString('utf-8').trim();
+        // Detect the most common Linux failure: a dynamically-linked
+        // libstdc++ / libsndfile not being present and turn it into an
+        // actionable message.
+        const missingLib = /cannot open shared object file/i.test(stderr)
+          ? ' — a system library is missing. On Debian/Ubuntu try: sudo apt install libstdc++6 libsndfile1'
+          : '';
+        reject(new Error(`Piper exited ${code}: ${stderr}${missingLib}`));
         return;
       }
       try {

@@ -113,6 +113,21 @@ export async function ingestFile(opts: IngestOptions): Promise<KnowledgeDocument
   const model = opts.embeddingModel ?? DEFAULT_EMBED_MODEL;
   const stat = fs.statSync(filePath);
 
+  // Fail fast if the embedding model isn't pulled yet. Without this we'd
+  // extract + chunk an entire file (potentially tens of MB and many
+  // seconds of PDF parsing) only to die on the first embed call. Probing
+  // with a tiny payload surfaces the "pull nomic-embed-text" error
+  // before the user wastes time.
+  onProgress?.({ stage: 'extract', current: 0, total: 1, message: `Checking embedding model ${model}…` });
+  try {
+    await embed('probe', model);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Can't ingest ${filename} — the embedding model isn't ready. ${msg}`,
+    );
+  }
+
   onProgress?.({ stage: 'extract', current: 0, total: 1, message: `Reading ${filename}…` });
   const text = await extractText(filePath, mimeType);
 

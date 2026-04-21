@@ -44,6 +44,19 @@ let loadedModelId: string | null = null;
 // works passably. Bump to whisper-base (~150 MB) for better accuracy.
 const DEFAULT_MODEL = 'Xenova/whisper-tiny';
 
+function emitProgress(payload: {
+  file?: string;
+  progress?: number;
+  loaded?: number;
+  total?: number;
+  status: string;
+}): void {
+  // Routed through the same activeWindow as transcribe-stream events;
+  // setActiveWindow is defined further down.
+  if (!activeWindow || activeWindow.isDestroyed()) return;
+  activeWindow.webContents.send('paia:whisper-download-progress', payload);
+}
+
 async function getPipeline(modelId: string): Promise<AsrPipeline> {
   if (pipelinePromise && loadedModelId === modelId) return pipelinePromise;
 
@@ -59,7 +72,27 @@ async function getPipeline(modelId: string): Promise<AsrPipeline> {
     transformers.env.allowLocalModels = false;
     transformers.env.allowRemoteModels = true;
 
-    const pipe = await transformers.pipeline('automatic-speech-recognition', modelId);
+    // Forward model-file download progress to the renderer so the user
+    // can see a progress bar on the ~75 MB first-run download instead
+    // of staring at a silent mic button.
+    const pipe = await transformers.pipeline('automatic-speech-recognition', modelId, {
+      progress_callback: (p: {
+        status?: string;
+        file?: string;
+        progress?: number;
+        loaded?: number;
+        total?: number;
+      }) => {
+        emitProgress({
+          status: p.status ?? 'downloading',
+          file: p.file,
+          progress: typeof p.progress === 'number' ? p.progress : undefined,
+          loaded: p.loaded,
+          total: p.total,
+        });
+      },
+    } as unknown as Record<string, unknown>);
+    emitProgress({ status: 'ready' });
     return pipe as unknown as AsrPipeline;
   })();
 
