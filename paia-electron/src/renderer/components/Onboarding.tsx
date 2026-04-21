@@ -84,6 +84,41 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
   const [platform, setPlatform] = useState<string | undefined>(undefined);
   const [copied, setCopied] = useState(false);
 
+  // Cloud-provider fallback — users who don't want to install Ollama can
+  // configure an API key here and skip the local-model step.
+  const [cloudOpen, setCloudOpen] = useState(false);
+  const [cloudProvider, setCloudProvider] = useState<'anthropic' | 'openai'>('anthropic');
+  const [cloudApiKey, setCloudApiKey] = useState('');
+  const [cloudSaving, setCloudSaving] = useState(false);
+  const [cloudSaved, setCloudSaved] = useState(false);
+
+  // Default cloud models per provider. Conservative picks — user can
+  // change later in Settings → Models.
+  const CLOUD_DEFAULT_MODEL: Record<'anthropic' | 'openai', string> = {
+    anthropic: 'anthropic/claude-sonnet-4-5-20250929',
+    openai: 'openai/gpt-4o-mini',
+  };
+
+  async function saveCloudProvider(): Promise<void> {
+    if (!cloudApiKey.trim()) return;
+    setCloudSaving(true);
+    try {
+      const configs = await api.getProviderConfigs();
+      const next = configs.map((c) =>
+        c.id === cloudProvider
+          ? { ...c, enabled: true, apiKey: cloudApiKey.trim() }
+          : c,
+      );
+      await api.saveProviderConfigs(next);
+      // Flip the Settings flag so providers.chat() doesn't bail out.
+      await api.saveSettings({ allowCloudModels: true, model: CLOUD_DEFAULT_MODEL[cloudProvider] });
+      setDraft((d) => ({ ...d, model: CLOUD_DEFAULT_MODEL[cloudProvider] }));
+      setCloudSaved(true);
+    } finally {
+      setCloudSaving(false);
+    }
+  }
+
   useEffect(() => {
     void api.getAppInfo().then((info) => setPlatform(info.platform));
     void refreshOllama();
@@ -105,11 +140,21 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
   async function pullPreset(preset: ModelPreset): Promise<void> {
     setPulling(preset.id);
     setPullStatus('starting…');
-    await api.ollamaPullModel(preset.id);
+    const ok = await api.ollamaPullModel(preset.id);
     await refreshOllama();
-    setDraft((d) => ({ ...d, model: preset.id }));
     setPulling(null);
-    setPullStatus('done');
+    if (ok) {
+      setDraft((d) => ({ ...d, model: preset.id }));
+      setPullStatus('done');
+    } else {
+      // Either cancelled by the user or the pull failed. The progress
+      // subscription will have set the message to "cancelled" or similar.
+      setPullStatus((prev) => (prev.includes('cancelled') ? prev : 'download failed — check network and try again'));
+    }
+  }
+
+  async function cancelPull(presetId: string): Promise<void> {
+    await api.ollamaCancelPull(presetId);
   }
 
   async function copyInstallCmd(): Promise<void> {
@@ -250,14 +295,25 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
                               {draft.model === p.id ? '✓ Selected' : 'Use this'}
                             </button>
                           ) : (
-                            <button
-                              type="button"
-                              className="primary"
-                              disabled={!!pulling}
-                              onClick={() => void pullPreset(p)}
-                            >
-                              {isPulling ? 'Downloading…' : 'Download'}
-                            </button>
+                            <>
+                              <button
+                                type="button"
+                                className="primary"
+                                disabled={!!pulling && !isPulling}
+                                onClick={() => void pullPreset(p)}
+                              >
+                                {isPulling ? 'Downloading…' : 'Download'}
+                              </button>
+                              {isPulling && (
+                                <button
+                                  type="button"
+                                  className="secondary"
+                                  onClick={() => void cancelPull(p.id)}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                         {isPulling && pullStatus && (
@@ -283,12 +339,72 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
               </>
             )}
 
+            {/* Cloud-provider fallback — unblocks users who don't want to
+                install Ollama. Tokens stay in the local settings store;
+                cloud providers remain opt-in in Settings → General. */}
+            <details
+              open={cloudOpen || (!ollama?.reachable && !draft.model)}
+              style={{ marginTop: 16, padding: 10, border: '1px solid var(--border)', borderRadius: 6 }}
+              onToggle={(e) => setCloudOpen((e.target as HTMLDetailsElement).open)}
+            >
+              <summary className="muted-note" style={{ cursor: 'pointer' }}>
+                Don't want to install Ollama? Use a cloud provider instead
+              </summary>
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <p className="muted-note" style={{ fontSize: 12, margin: 0 }}>
+                  Your API key is stored locally only. PII is still redacted before any prompt leaves your machine.
+                </p>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <input
+                      type="radio"
+                      name="cloud-provider"
+                      checked={cloudProvider === 'anthropic'}
+                      onChange={() => { setCloudProvider('anthropic'); setCloudSaved(false); }}
+                    />
+                    Claude (Anthropic)
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <input
+                      type="radio"
+                      name="cloud-provider"
+                      checked={cloudProvider === 'openai'}
+                      onChange={() => { setCloudProvider('openai'); setCloudSaved(false); }}
+                    />
+                    OpenAI
+                  </label>
+                </div>
+                <input
+                  type="password"
+                  placeholder={cloudProvider === 'anthropic' ? 'sk-ant-…' : 'sk-…'}
+                  value={cloudApiKey}
+                  onChange={(e) => { setCloudApiKey(e.target.value); setCloudSaved(false); }}
+                  style={{ padding: 6, fontFamily: 'monospace' }}
+                />
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={!cloudApiKey.trim() || cloudSaving}
+                    onClick={() => void saveCloudProvider()}
+                  >
+                    {cloudSaving ? 'Saving…' : cloudSaved ? '✓ Saved — you can skip the Ollama step' : 'Use this'}
+                  </button>
+                  {cloudSaved && (
+                    <span className="muted-note" style={{ fontSize: 11 }}>
+                      Default model: {CLOUD_DEFAULT_MODEL[cloudProvider]}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </details>
+
             <div className="onboarding-buttons">
               <button type="button" onClick={() => setStep(1)}>← Back</button>
               <button
                 type="button"
                 className="primary"
-                disabled={!ollama?.reachable || !draft.model}
+                disabled={!draft.model || (!ollama?.reachable && !cloudSaved)}
                 onClick={() => setStep(3)}
               >
                 {t('onboarding.next')} →

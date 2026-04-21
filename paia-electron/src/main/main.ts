@@ -404,15 +404,51 @@ ipcMain.handle('paia:ollama-status', () => ollama.status());
 
 ipcMain.handle('paia:ollama-delete-model', (_e, name: string) => ollama.deleteModel(name));
 
+// Active pull AbortControllers keyed by model name so the renderer can
+// cancel an in-flight pull. Only one pull per model at a time.
+const activePulls = new Map<string, AbortController>();
+
 ipcMain.handle(
   'paia:ollama-pull-model',
   async (event: IpcMainInvokeEvent, name: string) => {
-    const ok = await ollama.pullModel(name, (p) => {
-      event.sender.send('paia:ollama-pull-progress', { name, ...p });
-    });
-    return ok;
+    // If a pull for this model is already running, let the caller know.
+    if (activePulls.has(name)) return false;
+    const controller = new AbortController();
+    activePulls.set(name, controller);
+    try {
+      const ok = await ollama.pullModel(
+        name,
+        (p) => {
+          event.sender.send('paia:ollama-pull-progress', { name, ...p });
+        },
+        controller.signal,
+      );
+      return ok;
+    } catch (err) {
+      // Surface abort as a clean `false` return (not an exception) so the
+      // renderer can distinguish cancelled vs. crashed. Other errors
+      // bubble up.
+      const msg = err instanceof Error ? err.message : String(err);
+      if (controller.signal.aborted || /abort/i.test(msg)) {
+        event.sender.send('paia:ollama-pull-progress', {
+          name,
+          status: 'cancelled',
+        });
+        return false;
+      }
+      throw err;
+    } finally {
+      activePulls.delete(name);
+    }
   },
 );
+
+ipcMain.handle('paia:ollama-cancel-pull', (_e, name: string) => {
+  const ctrl = activePulls.get(name);
+  if (!ctrl) return false;
+  ctrl.abort();
+  return true;
+});
 
 interface ChatPayload {
   threadId: string;
@@ -493,12 +529,38 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
   // 5. Stream the response back to the renderer + assemble the full text.
   //    Routed through the provider dispatcher so cloud providers (OpenAI,
   //    Anthropic, openai-compatible) work transparently when enabled.
+  //
+  //    Wrap the call in an inactivity watchdog: if no token arrives for
+  //    90 seconds (model is stuck / daemon deadlocked / network hung), we
+  //    reject so the user gets an actionable error instead of an
+  //    indefinite spinner. The watchdog is reset on each received token,
+  //    so a legitimately-slow long response won't trip it.
   let assembled = '';
+  const INACTIVITY_MS = 90_000;
   try {
-    const finalText = await providers.chat(model, messages, (token) => {
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
+    let rejectWatchdog: ((err: Error) => void) | null = null;
+    const armWatchdog = (): void => {
+      if (watchdog) clearTimeout(watchdog);
+      watchdog = setTimeout(() => {
+        rejectWatchdog?.(
+          new Error(
+            `No response from the model for ${INACTIVITY_MS / 1000}s. The daemon may be stuck — try sending again, or check that Ollama is running.`,
+          ),
+        );
+      }, INACTIVITY_MS);
+    };
+    const watchdogPromise = new Promise<never>((_res, rej) => {
+      rejectWatchdog = rej;
+    });
+    armWatchdog();
+    const chatPromise = providers.chat(model, messages, (token) => {
       assembled += token;
+      armWatchdog();
       event.sender.send('paia:chat-token', { threadId, token });
     });
+    const finalText = await Promise.race([chatPromise, watchdogPromise]);
+    if (watchdog) clearTimeout(watchdog);
     const text = finalText || assembled;
 
     // 6. Persist the assistant reply.

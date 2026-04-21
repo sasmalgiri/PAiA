@@ -140,6 +140,8 @@ const api = {
     ipcRenderer.invoke('paia:ollama-delete-model', name),
   ollamaPullModel: (name: string): Promise<boolean> =>
     ipcRenderer.invoke('paia:ollama-pull-model', name),
+  ollamaCancelPull: (name: string): Promise<boolean> =>
+    ipcRenderer.invoke('paia:ollama-cancel-pull', name),
   chatSend: (payload: ChatSendPayload): Promise<{ ok: boolean; text?: string; error?: string }> =>
     ipcRenderer.invoke('paia:chat-send', payload),
 
@@ -266,6 +268,15 @@ const api = {
     sub('paia:whisper-token', handler),
   onWhisperDone: (handler: (p: { streamId: string; text: string; error?: string }) => void) =>
     sub('paia:whisper-done', handler),
+  onWhisperDownloadProgress: (
+    handler: (p: {
+      status: string;
+      file?: string;
+      progress?: number;
+      loaded?: number;
+      total?: number;
+    }) => void,
+  ) => sub('paia:whisper-download-progress', handler),
 
   // ── updater ──────────────────────────────────────────────
   checkForUpdates: (): Promise<UpdateInfo> => ipcRenderer.invoke('paia:check-for-updates'),
