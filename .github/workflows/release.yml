@@ -47,7 +47,11 @@ jobs:
         working-directory: paia-electron
         run: npm ci
 
-      - name: Build (Windows)
+      - name: Compile TypeScript + renderer
+        working-directory: paia-electron
+        run: npm run build
+
+      - name: Package (Windows)
         if: matrix.os == 'windows-latest'
         working-directory: paia-electron
         run: npx electron-builder --win --publish=never
@@ -55,7 +59,7 @@ jobs:
           CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
 
-      - name: Build (macOS)
+      - name: Package (macOS)
         if: matrix.os == 'macos-latest'
         working-directory: paia-electron
         run: npx electron-builder --mac --publish=never
@@ -66,7 +70,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Build (Linux)
+      - name: Package (Linux)
         if: matrix.os == 'ubuntu-latest'
         working-directory: paia-electron
         run: npx electron-builder --linux --publish=never
