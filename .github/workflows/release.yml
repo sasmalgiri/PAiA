@@ -62,7 +62,13 @@ jobs:
       - name: Package (macOS)
         if: matrix.os == 'macos-latest'
         working-directory: paia-electron
-        run: npx electron-builder --mac --publish=never
+        run: |
+          if [ -z "$CSC_LINK" ]; then
+            echo "No MAC_CSC_LINK secret set — building unsigned (identity=null)"
+            npx electron-builder --mac --publish=never -c.mac.identity=null
+          else
+            npx electron-builder --mac --publish=never
+          fi
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
