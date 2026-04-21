@@ -66,6 +66,11 @@ async function runAction(task: ScheduledTask): Promise<void> {
         goal: action.goal,
         model: task.model,
         autonomy: action.autonomy,
+        // Scheduled tasks fire when the user is almost certainly not
+        // looking at the app. Default to headless (bypass interactive
+        // approvals) unless the user explicitly set bypassApproval=false
+        // on the task config to keep the usual interactive behaviour.
+        bypassApproval: action.bypassApproval !== false,
       });
     } else if (action.kind === 'research') {
       const thread = await ensureScheduledThread(task);

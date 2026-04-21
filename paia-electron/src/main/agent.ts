@@ -60,6 +60,9 @@ interface RunContext {
   stepOrdinal: number;
   aborted: boolean;
   transcript: ChatMessage[];
+  /** Headless mode — skip interactive approvals. Set by scheduled runs
+   *  and other non-interactive entry points. */
+  bypassApproval: boolean;
 }
 
 const runs = new Map<string, RunContext>();
@@ -231,6 +234,14 @@ export interface StartAgentOptions {
   stepBudget?: number;
   /** Extra context the caller wants inlined ahead of the goal (screen OCR, user text). */
   extraContext?: string;
+  /**
+   * Skip the interactive approval UI for every tool call. Intended for
+   * scheduled / headless runs — the user is not at the keyboard and the
+   * default behaviour of blocking on approval would deadlock the run.
+   * Does NOT override classroom policy or autonomy tier: high-risk tools
+   * still require autonomy ≥ 'autonomous' to be chosen at all.
+   */
+  bypassApproval?: boolean;
 }
 
 export async function startRun(opts: StartAgentOptions): Promise<AgentRun> {
@@ -269,7 +280,13 @@ export async function startRun(opts: StartAgentOptions): Promise<AgentRun> {
     { role: 'user', content: opts.goal },
   ];
 
-  const ctx: RunContext = { run, stepOrdinal: 0, aborted: false, transcript };
+  const ctx: RunContext = {
+    run,
+    stepOrdinal: 0,
+    aborted: false,
+    transcript,
+    bypassApproval: !!opts.bypassApproval,
+  };
   runs.set(run.id, ctx);
   send('paia:agent-run', run);
 
@@ -356,7 +373,9 @@ async function loop(ctx: RunContext): Promise<void> {
         continue;
       }
 
-      const autoApprove = shouldAutoApprove(ctx.run.autonomy, handler.definition.risk);
+      const autoApprove =
+        ctx.bypassApproval ||
+        shouldAutoApprove(ctx.run.autonomy, handler.definition.risk);
       let approved = autoApprove;
       if (!autoApprove) {
         db.updateAgentRun(ctx.run.id, { status: 'awaiting-approval' });

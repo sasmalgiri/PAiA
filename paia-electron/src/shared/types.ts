@@ -719,7 +719,21 @@ export type ScheduleTrigger =
   | { kind: 'once'; at: number };
 
 export type ScheduleAction =
-  | { kind: 'agent'; goal: string; autonomy: AgentAutonomy }
+  | {
+      kind: 'agent';
+      goal: string;
+      autonomy: AgentAutonomy;
+      /**
+       * If true, the scheduled agent run skips interactive approval for
+       * every tool call — needed because the user is typically not at
+       * the keyboard when a cron fires. The autonomy tier still governs
+       * which tools the model is allowed to plan; this flag only
+       * suppresses the approval UI. Default false (the run pauses on a
+       * non-auto-approved tool and the user sees a pending-approval
+       * card when they next open PAiA).
+       */
+      bypassApproval?: boolean;
+    }
   | { kind: 'research'; question: string }
   | { kind: 'prompt'; text: string };
 
