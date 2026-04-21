@@ -46,4 +46,38 @@ describe('redact', () => {
     expect(r.categories.email).toBe(2);
     expect(r.categories.ip).toBe(1);
   });
+
+  // ── False-positive guards ────────────────────────────────────────
+
+  it('does NOT redact ISBN-shaped strings as credit cards', () => {
+    // ISBN-13 is 13 digits with hyphens; fails Luhn + no valid BIN.
+    const r = redact('See ISBN 978-0-13-110362-7 for details');
+    expect(r.redacted).toContain('978-0-13-110362-7');
+    expect(r.categories.card ?? 0).toBe(0);
+  });
+
+  it('does NOT redact arbitrary long digit sequences as credit cards', () => {
+    const r = redact('Tracking: 1Z999AA10123456784 order 1234567890123456');
+    // Neither string satisfies Luhn + valid-BIN.
+    expect(r.categories.card ?? 0).toBe(0);
+  });
+
+  it('DOES redact a real Visa card', () => {
+    // 4111 1111 1111 1111 is a standard test Visa (passes Luhn, BIN 4).
+    const r = redact('card: 4111 1111 1111 1111');
+    expect(r.categories.card).toBe(1);
+    expect(r.redacted).toContain('[CARD-REDACTED]');
+  });
+
+  it('does NOT redact random base64 payloads as JWTs', () => {
+    // Has the eyJ...eyJ...xxx shape but header does not decode to JSON.
+    const fake = 'eyJzb21lYmFzZTY0ZGF0YQ.eyJtb3JlYmFzZTY0.xxxxxxxxxxxxxxxxxxxx';
+    const r = redact(`payload=${fake}`);
+    expect(r.categories.jwt ?? 0).toBe(0);
+  });
+
+  it('redacts international (E.164) phone numbers', () => {
+    const r = redact('call +44 20 7946 0958 or +91 98765 43210');
+    expect(r.categories.phone).toBeGreaterThanOrEqual(2);
+  });
 });
