@@ -3,6 +3,7 @@
   "version": "0.11.4",
   "private": true,
   "description": "PAiA — Privacy-first AI screen assistant",
+  "homepage": "https://github.com/sasmalgiri/PAiA",
   "author": {
     "name": "PAiA",
     "email": "noreply@paia.local"

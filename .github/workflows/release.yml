@@ -64,6 +64,7 @@ jobs:
         working-directory: paia-electron
         run: npx electron-builder --mac --publish=never
         env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
