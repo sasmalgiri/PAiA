@@ -31,16 +31,14 @@
 <header class="hero" style="padding: 140px 0 40px;">
   <div class="container">
     <h1 style="font-size: clamp(36px, 5vw, 52px);">Download PAiA</h1>
-    <p class="tagline">v0.3.0 · April 2026 · Free for personal use · 14-day Pro trial included</p>
+    <p class="tagline">v0.11.4 · April 2026 · Free for personal use · 14-day Pro trial included</p>
   </div>
 </header>
 
 <section style="padding-top: 0;">
   <div class="container">
     <div style="max-width: 720px; margin: 0 auto 32px; padding: 16px 20px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; text-align: center; font-size: 14px; color: var(--text2);">
-      <strong>Signed installer binaries are still being prepared.</strong>
-      The preview release below ships the full source so you can build and run PAiA locally today — prebuilt
-      .exe / .dmg / AppImage artifacts will attach to this same release page as soon as code-signing is finalised.
+      These builds are not yet code-signed. Windows may show a SmartScreen warning ("More info" → "Run anyway") and macOS may need a right-click → Open on first launch. Signing is in progress.
     </div>
 
     <div class="download-grid">
@@ -48,22 +46,28 @@
       <div class="download-card">
         <div class="download-os">⊞</div>
         <div class="download-name">Windows</div>
-        <div class="download-meta">10 / 11 · x64 · installer coming soon</div>
-        <a href="https://github.com/sasmalgiri/PAiA/releases/latest" class="btn btn-primary">View preview release</a>
+        <div class="download-meta">10 / 11 · x64 · NSIS installer</div>
+        <a href="https://github.com/sasmalgiri/PAiA/releases/download/v0.11.4/PAiA-Setup-0.11.4.exe" class="btn btn-primary">Download for Windows</a>
       </div>
 
       <div class="download-card">
         <div class="download-os"></div>
         <div class="download-name">macOS</div>
-        <div class="download-meta">12+ · Intel + Apple Silicon · installer coming soon</div>
-        <a href="https://github.com/sasmalgiri/PAiA/releases/latest" class="btn btn-primary">View preview release</a>
+        <div class="download-meta">12+ · Apple Silicon &amp; Intel · .dmg</div>
+        <a href="https://github.com/sasmalgiri/PAiA/releases/download/v0.11.4/PAiA-0.11.4-arm64.dmg" class="btn btn-primary">Download for Apple Silicon</a>
+        <div style="margin-top: 10px; font-size: 13px;">
+          <a href="https://github.com/sasmalgiri/PAiA/releases/download/v0.11.4/PAiA-0.11.4-x64.dmg">Intel Mac download</a>
+        </div>
       </div>
 
       <div class="download-card">
         <div class="download-os">🐧</div>
         <div class="download-name">Linux</div>
-        <div class="download-meta">x64 · AppImage / .deb · installer coming soon</div>
-        <a href="https://github.com/sasmalgiri/PAiA/releases/latest" class="btn btn-primary">View preview release</a>
+        <div class="download-meta">x64 · AppImage or .deb</div>
+        <a href="https://github.com/sasmalgiri/PAiA/releases/download/v0.11.4/PAiA-0.11.4-x64.AppImage" class="btn btn-primary">Download AppImage</a>
+        <div style="margin-top: 10px; font-size: 13px;">
+          <a href="https://github.com/sasmalgiri/PAiA/releases/download/v0.11.4/PAiA-0.11.4-x64.deb">.deb for Debian/Ubuntu</a>
+        </div>
       </div>
 
     </div>
