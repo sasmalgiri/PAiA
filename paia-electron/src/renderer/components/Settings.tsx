@@ -37,6 +37,7 @@ import { ClassroomTab } from './Classroom';
 import { AVAILABLE_LOCALES } from '../lib/i18n';
 import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/modelGroups';
 import { CloudModelConsentModal } from './CloudModelConsentModal';
+import { TaskQueuePanel } from './TaskQueuePanel';
 
 interface SettingsViewProps {
   settings: Settings;
@@ -54,6 +55,7 @@ type Tab =
   | 'knowledge'
   | 'tools'
   | 'agent'
+  | 'task-queue'
   | 'memory'
   | 'connectors'
   | 'schedule'
@@ -114,6 +116,7 @@ const TAB_GROUPS: TabGroup[] = [
     id: 'power', label: 'Power features', emoji: '⚡',
     tabs: [
       { id: 'agent', label: 'Agent', keywords: 'autonomous tool-use plan act observe' },
+      { id: 'task-queue', label: 'Task queue', keywords: 'batch goals sequence jarvis backlog queue' },
       { id: 'ambient', label: 'Ambient / autopilot', keywords: 'proactive watch clipboard rule' },
       { id: 'schedule', label: 'Scheduler', keywords: 'cron recurring interval one-shot' },
       { id: 'media', label: 'Media', keywords: 'image video generation dalle stability comfyui' },
@@ -230,6 +233,7 @@ export function SettingsView({ settings, personas, onSave, onBack, onPersonasCha
         {tab === 'knowledge' && <KnowledgeTab />}
         {tab === 'tools' && <ToolsTab />}
         {tab === 'agent' && <AgentTab settings={settings} onSave={onSave} />}
+        {tab === 'task-queue' && <TaskQueuePanel />}
         {tab === 'memory' && <MemoryTab />}
         {tab === 'connectors' && <ConnectorsTab />}
         {tab === 'schedule' && <ScheduleTab />}
@@ -831,10 +835,75 @@ function KnowledgeTab() {
 
 // ─── Tools (MCP) ─────────────────────────────────────────────────
 
+/**
+ * Curated one-click installs for the "Jarvis starter pack" of MCP servers.
+ * Each recipe spawns via `npx -y` so there's no explicit install step —
+ * first run pulls the package, subsequent runs are cached. We intentionally
+ * exclude servers that need API keys (Brave, GitHub tokens, etc.) so the
+ * one-click path is truly one click; power users can still add those via
+ * the manual editor below.
+ */
+const RECOMMENDED_MCP_SERVERS: {
+  id: string;
+  name: string;
+  command: string;
+  args: string[];
+  description: string;
+  heavyFirstRun?: boolean;
+}[] = [
+  {
+    id: 'rec-filesystem',
+    name: 'Filesystem',
+    command: 'npx',
+    // Caller can edit the root path after install. Default to the user's
+    // Documents folder as a sane first pass on Windows; cross-platform
+    // paths can be fixed in the editor modal.
+    args: ['-y', '@modelcontextprotocol/server-filesystem', '~/Documents'],
+    description: 'Read/write files beyond PAiA\'s built-in sandbox. Edit the root path after install.',
+  },
+  {
+    id: 'rec-memory',
+    name: 'Memory',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-memory'],
+    description: 'Structured key-value memory the agent can recall across every conversation.',
+  },
+  {
+    id: 'rec-sequential-thinking',
+    name: 'Sequential thinking',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-sequential-thinking'],
+    description: 'Scaffolds chain-of-thought for the model. Biggest quality uplift on small local models.',
+  },
+  {
+    id: 'rec-git',
+    name: 'Git',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-git', '--repository', '.'],
+    description: 'Repo status/diff/log/blame/commit against whatever cwd the server is spawned in.',
+  },
+  {
+    id: 'rec-time',
+    name: 'Time',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-time'],
+    description: 'Timezone-aware "now", conversions, scheduling math.',
+  },
+  {
+    id: 'rec-puppeteer',
+    name: 'Puppeteer (browser)',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-puppeteer'],
+    description: 'Full browser automation — more capable than PAiA\'s built-in browser tool.',
+    heavyFirstRun: true,
+  },
+];
+
 function ToolsTab() {
   const [configs, setConfigs] = useState<McpServerConfig[]>([]);
   const [states, setStates] = useState<McpServerState[]>([]);
   const [editing, setEditing] = useState<McpServerConfig | null>(null);
+  const [showRecommended, setShowRecommended] = useState(true);
 
   async function refresh() {
     setConfigs(await api.mcpListConfigs());
@@ -882,6 +951,66 @@ function ToolsTab() {
         your approval unless you whitelist it. Servers are spawned as child processes and
         talk over stdio.
       </p>
+
+      {showRecommended && (
+        <div className="settings-section">
+          <div className="settings-section-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>Recommended starter pack</span>
+            <button type="button" className="small" onClick={() => setShowRecommended(false)} style={{ marginLeft: 'auto' }}>
+              Hide
+            </button>
+          </div>
+          <div className="muted-note" style={{ marginBottom: 8 }}>
+            One-click adds for the most useful MCP servers. Each runs via <code>npx -y</code>, so
+            the first spawn downloads the package and subsequent spawns use the cache. Need
+            Node.js installed on your PATH.
+          </div>
+          {RECOMMENDED_MCP_SERVERS.map((rec) => {
+            const alreadyInstalled = configs.some(
+              (c) => c.command === rec.command && c.args.join(' ') === rec.args.join(' '),
+            );
+            return (
+              <div key={rec.id} className="mcp-server" style={{ opacity: alreadyInstalled ? 0.55 : 1 }}>
+                <div className="mcp-server-head">
+                  <strong>{rec.name}</strong>
+                  {rec.heavyFirstRun && (
+                    <span className="muted-note" style={{ fontSize: 11 }}>(large first-run download)</span>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  <button
+                    type="button"
+                    className="primary small"
+                    disabled={alreadyInstalled}
+                    onClick={async () => {
+                      const next: McpServerConfig = {
+                        id: crypto.randomUUID(),
+                        name: rec.name,
+                        command: rec.command,
+                        args: [...rec.args],
+                        env: {},
+                        enabled: true,
+                        autoApprove: [],
+                      };
+                      await saveAll([...configs, next]);
+                    }}
+                  >
+                    {alreadyInstalled ? 'Installed' : 'Add'}
+                  </button>
+                </div>
+                <div className="mcp-server-cmd"><code>{rec.command} {rec.args.join(' ')}</code></div>
+                <div className="muted-note" style={{ fontSize: 11, marginTop: 4 }}>
+                  {rec.description}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {!showRecommended && (
+        <button type="button" className="small" onClick={() => setShowRecommended(true)} style={{ alignSelf: 'flex-start' }}>
+          Show recommended servers
+        </button>
+      )}
 
       {configs.length === 0 && (
         <div className="muted-note">No MCP servers configured. Add one below.</div>

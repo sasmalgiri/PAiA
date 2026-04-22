@@ -2252,3 +2252,132 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   height: 100%;
   min-height: 400px;
 }
+
+/* ── Task queue panel ─────────────────────────────────────────── */
+.task-queue-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 14px;
+}
+.task-queue-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.task-queue-count {
+  color: var(--muted, #888);
+  font-size: 11px;
+  margin-left: auto;
+}
+.task-queue-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.2));
+  border-radius: 8px;
+}
+.task-queue-form textarea {
+  resize: vertical;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.task-queue-form button {
+  align-self: flex-end;
+}
+.task-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.task-queue-empty {
+  color: var(--muted, #888);
+  font-size: 12px;
+  padding: 14px;
+  text-align: center;
+  border: 1px dashed var(--border, rgba(128, 128, 128, 0.25));
+  border-radius: 8px;
+}
+.task-queue-item {
+  border: 1px solid var(--border, rgba(128, 128, 128, 0.18));
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(128, 128, 128, 0.04);
+}
+.task-queue-item.status-running {
+  border-color: rgba(74, 158, 255, 0.4);
+  background: rgba(74, 158, 255, 0.06);
+}
+.task-queue-item.status-done     { opacity: 0.65; }
+.task-queue-item.status-failed   { border-color: rgba(255, 107, 107, 0.35); }
+.task-queue-item.status-cancelled { opacity: 0.55; }
+.task-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.task-queue-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+.task-queue-dot.dot-pending   { background: #c8a64b; }
+.task-queue-dot.dot-running   { background: #4a9eff; box-shadow: 0 0 0 4px rgba(74, 158, 255, 0.15); }
+.task-queue-dot.dot-done      { background: #4ade80; }
+.task-queue-dot.dot-failed    { background: #ff6b6b; }
+.task-queue-dot.dot-cancelled { background: #888; }
+.task-queue-goal {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-queue-status {
+  color: var(--muted, #888);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.task-queue-cancel {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+.task-queue-result {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted, #888);
+  white-space: pre-wrap;
+  line-height: 1.4;
+  border-left: 2px solid var(--border, rgba(128, 128, 128, 0.25));
+  padding-left: 8px;
+}
+.task-queue-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Per-tool risk tag (AgentTab per-tool list) ──────────────── */
+.risk-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.risk-tag.risk-safe   { background: rgba(74, 222, 128, 0.15); color: var(--good, #4ade80); }
+.risk-tag.risk-low    { background: rgba(148, 200, 255, 0.15); color: #69a6d6; }
+.risk-tag.risk-medium { background: rgba(242, 201, 76, 0.15); color: #c8a64b; }
+.risk-tag.risk-high   { background: rgba(255, 107, 107, 0.15); color: var(--bad, #ff6b6b); }
+
