@@ -586,7 +586,7 @@ export function App() {
           onDeleteThread={deleteThread}
           onSend={sendMessage}
           onPersonaChange={(id) => void persistSettings({ personaId: id })}
-          onModelChange={(m) => void persistSettings({ model: m })}
+          onModelChange={(m, extra) => void persistSettings({ model: m, ...(extra ?? {}) })}
           onStartAgent={(goal) => void startAgent(goal)}
           onStartResearch={(q) => void startResearch(q)}
           onOpenCanvas={() => setCanvasOpen(true)}

@@ -343,6 +343,18 @@ const api = {
   onAgentApproval: (handler: (req: AgentApprovalRequest) => void) =>
     sub('paia:agent-approval', handler),
 
+  // ── task queue ──────────────────────────────────────────
+  queueEnqueue: (p: { goal: string; model?: string; autonomy?: AgentAutonomy | null }): Promise<import('../shared/types').QueuedTask> =>
+    ipcRenderer.invoke('paia:queue-enqueue', p),
+  queueList: (): Promise<import('../shared/types').QueuedTask[]> =>
+    ipcRenderer.invoke('paia:queue-list'),
+  queueCancel: (taskId: string): Promise<boolean> =>
+    ipcRenderer.invoke('paia:queue-cancel', taskId),
+  queueClearFinished: (): Promise<number> =>
+    ipcRenderer.invoke('paia:queue-clear-finished'),
+  onQueueUpdate: (handler: (tasks: import('../shared/types').QueuedTask[]) => void) =>
+    sub('paia:queue-update', handler),
+
   // ── research ────────────────────────────────────────────
   researchStart: (opts: { threadId: string; question: string; model: string; depth?: number; maxSources?: number }): Promise<ResearchRun> =>
     ipcRenderer.invoke('paia:research-start', opts),

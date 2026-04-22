@@ -200,6 +200,13 @@ export interface Settings {
   agentAllowShell: boolean;
   agentAllowFs: boolean;
   agentAllowedRoots: string[];
+  /**
+   * Tool names that should NOT be exposed to the agent planner.
+   * Disable-by-exception — an empty list means every registered tool
+   * (built-ins, browser, MCP, connectors, plugins) is available, subject
+   * to the coarser allow flags (agentAllowFs, agentAllowShell, etc.).
+   */
+  agentDisabledTools: string[];
 
   // research
   researchDepth: number;
@@ -550,7 +557,7 @@ export interface ToolDefinition {
   /** Risk tier — governs whether auto-approve can apply. */
   risk: 'safe' | 'low' | 'medium' | 'high';
   /** Tag surfaced in the UI (so users can filter/pre-approve by family). */
-  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp' | 'desktop' | 'cad-sim';
+  category: 'web' | 'fs' | 'shell' | 'screen' | 'clipboard' | 'window' | 'memory' | 'rag' | 'connector' | 'artifact' | 'mcp' | 'desktop' | 'cad-sim' | 'agent';
 }
 
 export type AgentAutonomy = 'manual' | 'assisted' | 'autonomous';
@@ -589,6 +596,34 @@ export interface AgentRun {
   startedAt: number;
   endedAt?: number;
   summary?: string;
+}
+
+// ─── task queue ────────────────────────────────────────────────────
+// Persistent FIFO queue of agent goals. Lets the user batch multiple
+// instructions ("do X, then Y, then Z") and have them executed one at
+// a time across sessions — survives restarts.
+
+export type QueuedTaskStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
+
+export interface QueuedTask {
+  id: string;
+  goal: string;
+  /** Ollama model the goal should run against. Falls back to Settings.model if empty. */
+  model: string;
+  /** Autonomy override for this task. Falls back to Settings.agentAutonomy if null. */
+  autonomy: AgentAutonomy | null;
+  status: QueuedTaskStatus;
+  /** Thread this run will write into; null until the runner picks the task up. */
+  threadId: string | null;
+  /** Agent run id assigned while the task is running. */
+  agentRunId: string | null;
+  /** Short summary / final answer on completion, or error message on failure. */
+  result: string | null;
+  /** Where this task came from — user UI, agent self-enqueue, imported batch. */
+  source: 'user' | 'agent' | 'import';
+  createdAt: number;
+  startedAt: number | null;
+  finishedAt: number | null;
 }
 
 export interface AgentApprovalRequest {

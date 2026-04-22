@@ -30,6 +30,7 @@ import * as ragSvc from './rag';
 import * as db from './db';
 import * as memorySvc from './memory';
 import * as desktop from './desktopControl';
+import * as taskQueue from './taskQueue';
 import { getActiveWindow } from './activeWindow';
 import { logger } from './logger';
 
@@ -689,6 +690,28 @@ const desktopScreenSizeTool: ToolHandler = {
   },
 };
 
+const taskQueueEnqueueTool: ToolHandler = {
+  definition: {
+    name: 'task_queue.enqueue',
+    description:
+      'Add a follow-up goal to the persistent task queue. Each queued goal runs as its own agent run, one at a time, after the current goal finishes. Use this when the user asks you to "also do X later" or gives a batch of instructions that are better handled as separate runs.',
+    category: 'agent',
+    risk: 'low',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        goal: { type: 'string', description: 'Goal text for the new run. Keep it self-contained.' },
+      },
+      required: ['goal'],
+    },
+  },
+  async execute(args) {
+    const goal = asString(args.goal, 'goal');
+    const task = taskQueue.enqueue({ goal, source: 'agent' });
+    return `Queued as task ${task.id}.`;
+  },
+};
+
 // ─── registry ──────────────────────────────────────────────────────
 
 export const builtInTools: ToolHandler[] = [
@@ -716,6 +739,7 @@ export const builtInTools: ToolHandler[] = [
   desktopShortcutTool,
   desktopMousePosTool,
   desktopScreenSizeTool,
+  taskQueueEnqueueTool,
 ];
 
 const handlerMap = new Map<string, ToolHandler>();

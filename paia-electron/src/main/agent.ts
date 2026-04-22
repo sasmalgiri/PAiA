@@ -81,6 +81,18 @@ function send(channel: string, payload: unknown): void {
   activeWindow?.webContents.send(channel, payload);
 }
 
+// ─── finalize listeners ────────────────────────────────────────────
+// Subscribed by internal services (e.g. taskQueue) that need to know
+// when a run terminates. Renderer listeners use the IPC channel instead.
+
+type FinalizeListener = (run: AgentRun) => void;
+const finalizeListeners = new Set<FinalizeListener>();
+
+export function onRunFinalized(cb: FinalizeListener): () => void {
+  finalizeListeners.add(cb);
+  return () => finalizeListeners.delete(cb);
+}
+
 // ─── approval ──────────────────────────────────────────────────────
 
 function shouldAutoApprove(
@@ -124,22 +136,30 @@ interface UnifiedTool {
 
 function collectTools(): UnifiedTool[] {
   const all: UnifiedTool[] = [];
+  const disabled = new Set(settingsStore.load().agentDisabledTools ?? []);
+  const allow = (def: ToolDefinition): boolean => !disabled.has(def.name);
   for (const t of tools.builtInTools) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of browserTools) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of remoteBrowserTools) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of mediaTools) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of connectors.connectorTools()) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of plugins.contributedTools()) {
+    if (!allow(t.definition)) continue;
     all.push({ definition: t.definition, execute: (a) => t.execute(a) });
   }
   for (const t of mcp.listAllTools()) {
@@ -150,6 +170,7 @@ function collectTools(): UnifiedTool[] {
       risk: 'medium',
       inputSchema: t.inputSchema,
     };
+    if (!allow(def)) continue;
     all.push({
       definition: def,
       execute: async (args) => {
@@ -484,6 +505,11 @@ function finalize(ctx: RunContext, status: AgentRun['status'], summary: string):
   });
   send('paia:agent-run', ctx.run);
   runs.delete(ctx.run.id);
+
+  for (const cb of finalizeListeners) {
+    try { cb(ctx.run); }
+    catch (err) { logger.error('agent finalize listener threw', err); }
+  }
 
   // Terminal events → native notification so the user knows a long-running
   // autonomous run finished even if they've tabbed away.

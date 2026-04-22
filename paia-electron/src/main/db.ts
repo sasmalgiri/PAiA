@@ -24,6 +24,8 @@ import type {
   KnowledgeDocument,
   MemoryEntry,
   MemoryScope,
+  QueuedTask,
+  QueuedTaskStatus,
   ResearchRun,
   ResearchSource,
   ResearchStage,
@@ -253,6 +255,23 @@ export async function initDatabase(): Promise<void> {
       last_error TEXT,
       next_run_at INTEGER
     );
+
+    -- ── task queue (persistent FIFO of agent goals) ───────────────
+    CREATE TABLE IF NOT EXISTS task_queue (
+      id TEXT PRIMARY KEY,
+      goal TEXT NOT NULL,
+      model TEXT NOT NULL DEFAULT '',
+      autonomy TEXT,
+      status TEXT NOT NULL,
+      thread_id TEXT,
+      agent_run_id TEXT,
+      result TEXT,
+      source TEXT NOT NULL DEFAULT 'user',
+      created_at INTEGER NOT NULL,
+      started_at INTEGER,
+      finished_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_queue_status ON task_queue(status, created_at);
 
     -- ── oauth / connectors ─────────────────────────────────────────
     CREATE TABLE IF NOT EXISTS connector_tokens (
@@ -1300,6 +1319,140 @@ export function deleteScheduledTask(id: string): void {
   const d = ensureDb();
   d.run(`DELETE FROM scheduled_tasks WHERE id = ?`, [id]);
   persist();
+}
+
+// ─── task queue ────────────────────────────────────────────────────
+
+function rowToQueuedTask(r: unknown[]): QueuedTask {
+  return {
+    id: r[0] as string,
+    goal: r[1] as string,
+    model: (r[2] as string) ?? '',
+    autonomy: (r[3] as QueuedTask['autonomy']) ?? null,
+    status: r[4] as QueuedTaskStatus,
+    threadId: (r[5] as string) ?? null,
+    agentRunId: (r[6] as string) ?? null,
+    result: (r[7] as string) ?? null,
+    source: (r[8] as QueuedTask['source']) ?? 'user',
+    createdAt: r[9] as number,
+    startedAt: (r[10] as number) ?? null,
+    finishedAt: (r[11] as number) ?? null,
+  };
+}
+
+const TASK_SELECT = `SELECT id, goal, model, autonomy, status, thread_id, agent_run_id, result, source, created_at, started_at, finished_at FROM task_queue`;
+
+export function enqueueTask(p: {
+  goal: string;
+  model?: string;
+  autonomy?: QueuedTask['autonomy'];
+  source?: QueuedTask['source'];
+}): QueuedTask {
+  const d = ensureDb();
+  const id = randomUUID();
+  const now = Date.now();
+  const source = p.source ?? 'user';
+  d.run(
+    `INSERT INTO task_queue (id, goal, model, autonomy, status, source, created_at)
+     VALUES (?, ?, ?, ?, 'pending', ?, ?)`,
+    [id, p.goal, p.model ?? '', p.autonomy ?? null, source, now],
+  );
+  persist();
+  return {
+    id,
+    goal: p.goal,
+    model: p.model ?? '',
+    autonomy: p.autonomy ?? null,
+    status: 'pending',
+    threadId: null,
+    agentRunId: null,
+    result: null,
+    source,
+    createdAt: now,
+    startedAt: null,
+    finishedAt: null,
+  };
+}
+
+export function listQueuedTasks(limit = 200): QueuedTask[] {
+  const d = ensureDb();
+  const rows = d.exec(`${TASK_SELECT} ORDER BY created_at ASC LIMIT ?`, [limit]);
+  if (rows.length === 0) return [];
+  return rows[0].values.map(rowToQueuedTask);
+}
+
+export function getQueuedTask(id: string): QueuedTask | null {
+  const d = ensureDb();
+  const rows = d.exec(`${TASK_SELECT} WHERE id = ?`, [id]);
+  if (rows.length === 0 || rows[0].values.length === 0) return null;
+  return rowToQueuedTask(rows[0].values[0]);
+}
+
+export function nextPendingTask(): QueuedTask | null {
+  const d = ensureDb();
+  const rows = d.exec(
+    `${TASK_SELECT} WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1`,
+  );
+  if (rows.length === 0 || rows[0].values.length === 0) return null;
+  return rowToQueuedTask(rows[0].values[0]);
+}
+
+export function updateQueuedTask(
+  id: string,
+  patch: Partial<Omit<QueuedTask, 'id' | 'createdAt'>>,
+): void {
+  const d = ensureDb();
+  const fields: string[] = [];
+  const values: (string | number | null)[] = [];
+  if (patch.goal !== undefined) { fields.push('goal = ?'); values.push(patch.goal); }
+  if (patch.model !== undefined) { fields.push('model = ?'); values.push(patch.model); }
+  if (patch.autonomy !== undefined) { fields.push('autonomy = ?'); values.push(patch.autonomy); }
+  if (patch.status !== undefined) { fields.push('status = ?'); values.push(patch.status); }
+  if (patch.threadId !== undefined) { fields.push('thread_id = ?'); values.push(patch.threadId); }
+  if (patch.agentRunId !== undefined) { fields.push('agent_run_id = ?'); values.push(patch.agentRunId); }
+  if (patch.result !== undefined) { fields.push('result = ?'); values.push(patch.result); }
+  if (patch.source !== undefined) { fields.push('source = ?'); values.push(patch.source); }
+  if (patch.startedAt !== undefined) { fields.push('started_at = ?'); values.push(patch.startedAt); }
+  if (patch.finishedAt !== undefined) { fields.push('finished_at = ?'); values.push(patch.finishedAt); }
+  if (fields.length === 0) return;
+  values.push(id);
+  d.run(`UPDATE task_queue SET ${fields.join(', ')} WHERE id = ?`, values);
+  persist();
+}
+
+export function deleteQueuedTask(id: string): void {
+  const d = ensureDb();
+  d.run(`DELETE FROM task_queue WHERE id = ?`, [id]);
+  persist();
+}
+
+export function clearFinishedTasks(): number {
+  const d = ensureDb();
+  const before = d.exec(
+    `SELECT COUNT(*) FROM task_queue WHERE status IN ('done', 'failed', 'cancelled')`,
+  );
+  const n = before.length > 0 ? (before[0].values[0][0] as number) : 0;
+  d.run(`DELETE FROM task_queue WHERE status IN ('done', 'failed', 'cancelled')`);
+  persist();
+  return n;
+}
+
+/**
+ * Reconcile stale 'running' rows on startup — if the app crashed mid-run,
+ * the DB still shows a task as in-flight but no process is working it.
+ * Flip those to 'failed' so the runner doesn't assume they'll finish.
+ */
+export function reconcileStaleRunningTasks(): number {
+  const d = ensureDb();
+  const now = Date.now();
+  const before = d.exec(`SELECT COUNT(*) FROM task_queue WHERE status = 'running'`);
+  const n = before.length > 0 ? (before[0].values[0][0] as number) : 0;
+  d.run(
+    `UPDATE task_queue SET status = 'failed', result = ?, finished_at = ? WHERE status = 'running'`,
+    ['Interrupted — PAiA was restarted before this task finished.', now],
+  );
+  persist();
+  return n;
 }
 
 // ─── connector tokens ──────────────────────────────────────────────

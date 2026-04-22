@@ -13,6 +13,7 @@ import type {
 } from '../../shared/types';
 import { api } from '../lib/api';
 import { useT } from '../lib/i18n';
+import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/modelGroups';
 import { Message } from './Message';
 import { Composer } from './Composer';
 import { Sidebar } from './Sidebar';
@@ -20,6 +21,7 @@ import { TrialPill } from './TrialPill';
 import { ActivityBar } from './ActivityBar';
 import { PersonaPicker } from './PersonaPicker';
 import { ShortcutHelp } from './ShortcutHelp';
+import { CloudModelConsentModal } from './CloudModelConsentModal';
 
 interface PanelProps {
   settings: Settings;
@@ -34,7 +36,7 @@ interface PanelProps {
   onDeleteThread: (id: string) => void;
   onSend: (text: string, attachments: Omit<DbAttachment, 'id' | 'messageId'>[]) => void;
   onPersonaChange: (id: string) => void;
-  onModelChange: (model: string) => void;
+  onModelChange: (model: string, extra?: { allowCloudModels?: boolean }) => void;
   onStartAgent: (goal: string) => void;
   onStartResearch: (question: string) => void;
   onOpenCanvas: () => void;
@@ -56,6 +58,7 @@ export function Panel(props: PanelProps) {
   const [personaPickerOpen, setPersonaPickerOpen] = useState(false);
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false);
   const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [pendingCloudModel, setPendingCloudModel] = useState<string | null>(null);
   const [ollamaOk, setOllamaOk] = useState<boolean | null>(null);
   const [collections, setCollections] = useState<KnowledgeCollection[]>([]);
   const [attachedCollections, setAttachedCollections] = useState<string[]>([]);
@@ -362,14 +365,28 @@ export function Panel(props: PanelProps) {
           </button>
           <select
             value={settings.model}
-            onChange={(e) => onModelChange(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (!next) return;
+              if (isCloudModel(next) && !settings.allowCloudModels) {
+                setPendingCloudModel(next);
+                return;
+              }
+              onModelChange(next);
+            }}
             title="Model"
             className="header-select"
           >
             {models.length === 0 ? (
               <option value="">no models</option>
             ) : (
-              models.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)
+              groupModels(models).map((g) => (
+                <optgroup key={g.providerId} label={g.label}>
+                  {g.models.map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </optgroup>
+              ))
             )}
           </select>
           <button type="button" className="icon-btn" title={t('panel.captureFullScreen')} aria-label={t('panel.captureFullScreen')} onClick={() => void doScreenCapture(false)}>📸</button>
@@ -502,6 +519,23 @@ export function Panel(props: PanelProps) {
         />
       )}
       {shortcutHelpOpen && <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />}
+      {pendingCloudModel && (() => {
+        const meta = providerMeta(pendingCloudModel);
+        const { model } = parseQualified(pendingCloudModel);
+        return (
+          <CloudModelConsentModal
+            providerId={meta.id}
+            providerName={meta.label.replace(/\s*☁.*$/, '').trim()}
+            modelName={model}
+            onCancel={() => setPendingCloudModel(null)}
+            onConfirm={() => {
+              const choice = pendingCloudModel;
+              setPendingCloudModel(null);
+              onModelChange(choice, { allowCloudModels: true });
+            }}
+          />
+        );
+      })()}
     </section>
   );
 }

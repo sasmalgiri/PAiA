@@ -111,9 +111,10 @@ function DetachedApp() {
         void api.saveSettings({ personaId: id });
         setSettings((s) => (s ? { ...s, personaId: id } : s));
       }}
-      onModelChange={(m) => {
+      onModelChange={(m, extra) => {
         void api.updateThread(thread.id, { model: m });
         setThread({ ...thread, model: m });
+        if (extra?.allowCloudModels) void api.saveSettings({ allowCloudModels: true });
       }}
       onStartAgent={() => { /* could wire later */ }}
       onStartResearch={() => { /* could wire later */ }}

@@ -48,6 +48,7 @@ import * as memorySvc from './memory';
 import * as experience from './experience';
 import * as artifactsSvc from './artifacts';
 import * as scheduler from './scheduler';
+import * as taskQueue from './taskQueue';
 import * as classroom from './classroom';
 import * as ambient from './ambient';
 import * as team from './team';
@@ -229,6 +230,7 @@ function createMainWindow(): void {
   updater.attachUpdater(mainWindow);
   mcp.setActiveWindow(mainWindow);
   agent.setActiveWindow(mainWindow);
+  taskQueue.setActiveWindow(mainWindow);
   researchSvc.setActiveWindow(mainWindow);
   classroom.setActiveWindow(mainWindow);
   ambient.setActiveWindow(mainWindow);
@@ -1014,6 +1016,7 @@ app.whenReady().then(async () => {
   void mcp.startAllConfigured();
   void wakeWord.startIfEnabled(() => triggerPushToTalk());
   scheduler.start();
+  taskQueue.init();
 
   // Plugins load before ambient so any ambient triggers a plugin contributes
   // are visible when the ambient loop starts.
@@ -1042,6 +1045,7 @@ app.on('will-quit', () => {
   void mcp.stopAll();
   void wakeWord.stop();
   scheduler.stop();
+  taskQueue.stop();
   ambient.stop();
 });
 

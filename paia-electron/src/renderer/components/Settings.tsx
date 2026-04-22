@@ -29,11 +29,14 @@ import type {
   ScheduleTrigger,
   ScheduledTask,
   Settings,
+  ToolDefinition,
   WakeWordState,
 } from '../../shared/types';
 import { api } from '../lib/api';
 import { ClassroomTab } from './Classroom';
 import { AVAILABLE_LOCALES } from '../lib/i18n';
+import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/modelGroups';
+import { CloudModelConsentModal } from './CloudModelConsentModal';
 
 interface SettingsViewProps {
   settings: Settings;
@@ -341,6 +344,9 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
   const [pulling, setPulling] = useState(false);
   const [providerStates, setProviderStates] = useState<ProviderState[]>([]);
   const [providerConfigs, setProviderConfigs] = useState<ProviderConfig[]>([]);
+  const [pendingCloudModel, setPendingCloudModel] = useState<string | null>(null);
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
+  const [testingProvider, setTestingProvider] = useState<string | null>(null);
 
   async function refresh() {
     const s = await api.ollamaStatus();
@@ -385,17 +391,16 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
   }
 
   // Build the union of all available qualified models for the default-model picker.
+  // Labels are just the model name — the optgroup carries the provider info.
   const allQualified: { id: string; label: string }[] = [];
   for (const p of providerStates) {
     for (const m of p.models) {
-      const id = `${p.id}:${m}`;
-      allQualified.push({ id, label: `${p.isCloud ? '☁ ' : ''}${m}  (${p.name})` });
+      allQualified.push({ id: `${p.id}:${m}`, label: m });
     }
   }
-  // Bare ollama model names are still accepted by the dispatcher.
   for (const m of installed) {
     if (!allQualified.find((q) => q.id === `ollama:${m.name}`)) {
-      allQualified.push({ id: m.name, label: `${m.name}  (Ollama)` });
+      allQualified.push({ id: m.name, label: m.name });
     }
   }
 
@@ -407,13 +412,48 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
 
       <div className="field">
         <span>Default model</span>
-        <select value={settings.model} onChange={(e) => onSave({ model: e.target.value })}>
+        <select
+          value={settings.model}
+          onChange={(e) => {
+            const next = e.target.value;
+            if (!next) {
+              void onSave({ model: next });
+              return;
+            }
+            if (isCloudModel(next) && !settings.allowCloudModels) {
+              setPendingCloudModel(next);
+              return;
+            }
+            void onSave({ model: next });
+          }}
+        >
           <option value="">— pick one —</option>
-          {allQualified.map((q) => (
-            <option key={q.id} value={q.id}>{q.label}</option>
+          {groupModels(allQualified).map((g) => (
+            <optgroup key={g.providerId} label={g.label}>
+              {g.models.map((m) => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </optgroup>
           ))}
         </select>
       </div>
+      {pendingCloudModel && (() => {
+        const meta = providerMeta(pendingCloudModel);
+        const { model } = parseQualified(pendingCloudModel);
+        return (
+          <CloudModelConsentModal
+            providerId={meta.id}
+            providerName={meta.label.replace(/\s*☁.*$/, '').trim()}
+            modelName={model}
+            onCancel={() => setPendingCloudModel(null)}
+            onConfirm={() => {
+              const choice = pendingCloudModel;
+              setPendingCloudModel(null);
+              void onSave({ model: choice, allowCloudModels: true });
+            }}
+          />
+        );
+      })()}
 
       <div className="model-list">
         {installed.map((m) => (
@@ -474,12 +514,22 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
               </div>
               {c.enabled && settings.allowCloudModels && (
                 <>
-                  <input
-                    type="password"
-                    placeholder="API key"
-                    value={c.apiKey ?? ''}
-                    onChange={(e) => void updateProviderConfig(c.id, { apiKey: e.target.value })}
-                  />
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      style={{ flex: 1 }}
+                      type={showKeys[c.id] ? 'text' : 'password'}
+                      placeholder="API key"
+                      value={c.apiKey ?? ''}
+                      onChange={(e) => void updateProviderConfig(c.id, { apiKey: e.target.value })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowKeys((s) => ({ ...s, [c.id]: !s[c.id] }))}
+                      title={showKeys[c.id] ? 'Hide key' : 'Show key'}
+                    >
+                      {showKeys[c.id] ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
                   <p className="muted-note" style={{ margin: '4px 0 8px' }}>
                     Stored in the local SQLite database on this device — not encrypted
                     at rest beyond OS file permissions, and not synced. Create a
@@ -495,10 +545,39 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
                   )}
                   {(() => {
                     const st = providerStates.find((s) => s.id === c.id);
-                    if (!st) return null;
+                    const testing = testingProvider === c.id;
                     return (
-                      <div className={`status-pill ${st.reachable ? 'ok' : 'bad'}`}>
-                        {st.reachable ? `Connected · ${st.models.length} model(s)` : `Unreachable: ${st.error ?? 'unknown'}`}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {st && (
+                          <div className={`status-pill ${st.reachable ? 'ok' : 'bad'}`}>
+                            {testing
+                              ? 'Testing…'
+                              : st.reachable
+                                ? `Connected · ${st.models.length} model(s)`
+                                : `Unreachable: ${st.error ?? 'unknown'}`}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          disabled={testing || !c.apiKey}
+                          onClick={async () => {
+                            setTestingProvider(c.id);
+                            try { await refresh(); }
+                            finally { setTestingProvider(null); }
+                          }}
+                        >
+                          Test connection
+                        </button>
+                        {st?.reachable && st.models.length > 0 && (
+                          <details style={{ flexBasis: '100%' }}>
+                            <summary className="muted-note" style={{ cursor: 'pointer' }}>
+                              {st.models.length} model{st.models.length === 1 ? '' : 's'} available
+                            </summary>
+                            <div className="muted-note" style={{ marginTop: 4, fontFamily: 'monospace', fontSize: 11 }}>
+                              {st.models.join(', ')}
+                            </div>
+                          </details>
+                        )}
                       </div>
                     );
                   })()}
@@ -1445,6 +1524,8 @@ function AboutTab({ onQuit }: { onQuit: () => void }) {
 
 function AgentTab({ settings, onSave }: { settings: Settings; onSave: (p: Partial<Settings>) => Promise<void> }) {
   const [rootsDraft, setRootsDraft] = useState(settings.agentAllowedRoots.join('\n'));
+  const [tools, setTools] = useState<ToolDefinition[]>([]);
+  const [toolSearch, setToolSearch] = useState('');
 
   function saveRoots(): void {
     const list = rootsDraft
@@ -1452,6 +1533,40 @@ function AgentTab({ settings, onSave }: { settings: Settings; onSave: (p: Partia
       .map((s) => s.trim())
       .filter(Boolean);
     void onSave({ agentAllowedRoots: list });
+  }
+
+  useEffect(() => {
+    void api.agentListTools().then(setTools);
+  }, []);
+
+  const disabled = new Set(settings.agentDisabledTools);
+
+  function toggleTool(name: string, enable: boolean): void {
+    const next = new Set(disabled);
+    if (enable) next.delete(name); else next.add(name);
+    void onSave({ agentDisabledTools: [...next] });
+  }
+
+  function setCategory(category: string, enable: boolean): void {
+    const next = new Set(disabled);
+    for (const t of tools) {
+      if (t.category !== category) continue;
+      if (enable) next.delete(t.name); else next.add(t.name);
+    }
+    void onSave({ agentDisabledTools: [...next] });
+  }
+
+  // Group by category, stable order.
+  const categoryOrder: string[] = [];
+  const byCategory = new Map<string, ToolDefinition[]>();
+  for (const t of tools) {
+    if (toolSearch && !t.name.toLowerCase().includes(toolSearch.toLowerCase()) &&
+        !t.description.toLowerCase().includes(toolSearch.toLowerCase())) continue;
+    if (!byCategory.has(t.category)) {
+      categoryOrder.push(t.category);
+      byCategory.set(t.category, []);
+    }
+    byCategory.get(t.category)!.push(t);
   }
 
   return (
@@ -1508,6 +1623,60 @@ function AgentTab({ settings, onSave }: { settings: Settings; onSave: (p: Partia
           placeholder="/home/me/projects"
         />
       </label>
+
+      <div className="settings-section">
+        <div className="settings-section-title">
+          Per-tool access ({tools.length - disabled.size}/{tools.length} enabled)
+        </div>
+        <div className="muted-note" style={{ marginBottom: 8 }}>
+          Fine-grained switch per tool. A disabled tool never shows up in the planner's prompt,
+          so the agent can't plan to use it. Coarse guards above (fs / shell) apply first — if
+          they're off, the whole category is unavailable regardless of what's checked here.
+        </div>
+        <input
+          type="search"
+          value={toolSearch}
+          onChange={(e) => setToolSearch(e.target.value)}
+          placeholder="Filter tools by name or description..."
+          style={{ marginBottom: 8 }}
+        />
+        {tools.length === 0 && (
+          <div className="muted-note">Loading tool list...</div>
+        )}
+        {categoryOrder.map((cat) => {
+          const list = byCategory.get(cat)!;
+          const enabledInCat = list.filter((t) => !disabled.has(t.name)).length;
+          const allOn = enabledInCat === list.length;
+          return (
+            <div key={cat} className="settings-subsection" style={{ marginTop: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <strong style={{ textTransform: 'capitalize' }}>{cat}</strong>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <span className="muted-note">{enabledInCat}/{list.length}</span>
+                  <button type="button" onClick={() => setCategory(cat, !allOn)}>
+                    {allOn ? 'Disable all' : 'Enable all'}
+                  </button>
+                </div>
+              </div>
+              {list.map((t) => (
+                <label key={t.name} className="field row" style={{ alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, paddingRight: 8 }}>
+                    <div style={{ fontFamily: 'monospace', fontSize: 12 }}>
+                      {t.name} <span className={`risk-tag risk-${t.risk}`}>{t.risk}</span>
+                    </div>
+                    <div className="muted-note" style={{ fontSize: 11 }}>{t.description}</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={!disabled.has(t.name)}
+                    onChange={(e) => toggleTool(t.name, e.target.checked)}
+                  />
+                </label>
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

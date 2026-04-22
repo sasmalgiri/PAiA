@@ -54,6 +54,7 @@ const DEFAULTS: Settings = {
   agentAllowShell: false,
   agentAllowFs: true,
   agentAllowedRoots: [],
+  agentDisabledTools: [],
 
   researchDepth: 2,
   researchMaxSources: 8,
