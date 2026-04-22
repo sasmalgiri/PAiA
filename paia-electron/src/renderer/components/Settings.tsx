@@ -1083,6 +1083,20 @@ function VoiceTab({ settings, onSave }: { settings: Settings; onSave: (p: Partia
           <span>Speak responses aloud</span>
           <input type="checkbox" checked={settings.ttsEnabled} onChange={(e) => onSave({ ttsEnabled: e.target.checked })} />
         </label>
+        <label className="field row">
+          <span>
+            Confirm voice input before acting
+            <div className="muted-note" style={{ fontSize: 11, fontWeight: 'normal' }}>
+              After transcription, PAiA reads the heard text back aloud and waits for an
+              explicit Confirm. Helps catch Whisper mishears before an agent run starts.
+            </div>
+          </span>
+          <input
+            type="checkbox"
+            checked={settings.voiceConfirmBeforeSend}
+            onChange={(e) => onSave({ voiceConfirmBeforeSend: e.target.checked })}
+          />
+        </label>
         <label className="field">
           <span>Engine</span>
           <select value={settings.ttsEngine} onChange={(e) => onSave({ ttsEngine: e.target.value as Settings['ttsEngine'] })}>

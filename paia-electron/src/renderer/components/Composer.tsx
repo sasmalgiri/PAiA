@@ -8,6 +8,7 @@ import { api } from '../lib/api';
 import { useT } from '../lib/i18n';
 import { findCommand, parseSlashCommand, SLASH_COMMANDS } from '../lib/slashCommands';
 import { VadSegmenter } from '../lib/vadSegmenter';
+import { ConfirmTranscriptionModal } from './ConfirmTranscriptionModal';
 
 const VISION_MODEL_HINTS = ['llava', 'bakllava', 'moondream', 'llama3.2-vision', 'minicpm', 'qwen2-vl', 'qwen2.5-vl', 'pixtral'];
 
@@ -18,6 +19,9 @@ interface ComposerProps {
   sttEngine: 'chromium' | 'whisper';
   currentModel: string;
   voiceContinuous: boolean;
+  voiceConfirmBeforeSend: boolean;
+  ttsEngine: 'system' | 'piper';
+  piperVoice: string;
   onSend: (text: string, attachments: PendingAttachment[]) => void;
   onMetaCommand: (name: string, rest: string) => void;
 }
@@ -56,7 +60,11 @@ const VOICE_LANG_OPTIONS: { value: string; label: string }[] = [
   { value: 'zh-CN', label: 'Chinese' },
 ];
 
-export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, onSend, onMetaCommand }: ComposerProps) {
+export function Composer({
+  voiceLang, sttEngine, currentModel, voiceContinuous,
+  voiceConfirmBeforeSend, ttsEngine, piperVoice,
+  onSend, onMetaCommand,
+}: ComposerProps) {
   const { t } = useT();
   const [draft, setDraft] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
@@ -65,6 +73,10 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
   const [listening, setListening] = useState(false);
   const [hint, setHint] = useState(t('composer.hintRedacted'));
   const [dragOver, setDragOver] = useState(false);
+  // Voice-input confirmation: when `voiceConfirmBeforeSend` is on, finalized
+  // transcriptions land here instead of auto-sending. The modal reads the
+  // text back via TTS and waits for explicit Confirm/Edit/Cancel.
+  const [pendingVoiceText, setPendingVoiceText] = useState<string | null>(null);
   // Transient voice-language override: when unset, we use the Settings
   // default (`voiceLang`). When the user picks a different language in
   // the composer, that choice sticks for the current session only.
@@ -123,6 +135,28 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
     return () => { if (listening) stopVoice(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceContinuous]);
+
+  /**
+   * Centralized post-transcription gate. When the user has opted into
+   * voice confirmation, finalized text flows here instead of onSend so
+   * PAiA can read it back and wait for an explicit confirm. Also used by
+   * the single-shot Whisper path when it wants to populate the draft —
+   * a non-null `depositToDraft` avoids auto-sending in that case.
+   */
+  function finalizeVoiceInput(text: string, opts: { autoSend: boolean }): void {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (voiceConfirmBeforeSend) {
+      setPendingVoiceText(trimmed);
+      return;
+    }
+    if (opts.autoSend) {
+      onSend(trimmed, []);
+      setDraft('');
+    } else {
+      setDraft(trimmed);
+    }
+  }
 
   function submit(): void {
     const text = draft.trim();
@@ -304,8 +338,7 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
           const text = (finalText || interim).trim();
           finalText = '';
           if (text.length >= 3) {
-            onSend(text, []);
-            setDraft('');
+            finalizeVoiceInput(text, { autoSend: true });
           }
         }, 1600);
       }
@@ -422,7 +455,7 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
       setHint('No speech detected.');
       return;
     }
-    setDraft(text);
+    finalizeVoiceInput(text, { autoSend: false });
     setHint('PII redacted locally before send.');
   }
 
@@ -493,8 +526,11 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
         onAutoSubmit: () => {
           const text = draftRef.current.trim();
           if (text.length >= 3) {
-            onSend(text, []);
-            setDraft('');
+            // The streaming path has already deposited tokens into the draft;
+            // if we're about to require confirmation we must clear the draft
+            // so Edit mode in the modal doesn't stack on top of it.
+            if (voiceConfirmBeforeSend) setDraft('');
+            finalizeVoiceInput(text, { autoSend: true });
           }
         },
       },
@@ -641,6 +677,25 @@ export function Composer({ voiceLang, sttEngine, currentModel, voiceContinuous, 
           For images, try a vision model: <code>llava</code>, <code>bakllava</code>,
           <code>moondream</code>, or <code>llama3.2-vision</code>.
         </div>
+      )}
+      {pendingVoiceText !== null && (
+        <ConfirmTranscriptionModal
+          text={pendingVoiceText}
+          ttsEngine={ttsEngine}
+          piperVoice={piperVoice}
+          onConfirm={() => {
+            const t = pendingVoiceText;
+            setPendingVoiceText(null);
+            onSend(t, []);
+            setDraft('');
+          }}
+          onEdit={() => {
+            setDraft(pendingVoiceText);
+            setPendingVoiceText(null);
+            textareaRef.current?.focus();
+          }}
+          onCancel={() => setPendingVoiceText(null)}
+        />
       )}
     </div>
   );

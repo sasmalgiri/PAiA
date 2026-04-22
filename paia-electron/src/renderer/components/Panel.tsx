@@ -505,6 +505,9 @@ export function Panel(props: PanelProps) {
             sttEngine={settings.sttEngine}
             currentModel={currentThread?.model ?? settings.model}
             voiceContinuous={settings.voiceContinuous}
+            voiceConfirmBeforeSend={settings.voiceConfirmBeforeSend}
+            ttsEngine={settings.ttsEngine}
+            piperVoice={settings.piperVoice}
             onSend={onSend}
             onMetaCommand={handleMetaCommand}
           />

@@ -22,6 +22,7 @@ const DEFAULTS: Settings = {
   wakeWordEnabled: false,
   wakeWordAccessKey: '',
   wakeWordKeyword: 'computer',
+  voiceConfirmBeforeSend: false,
 
   theme: 'system',
   locale: 'en',

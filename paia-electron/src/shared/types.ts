@@ -161,6 +161,14 @@ export interface Settings {
   wakeWordEnabled: boolean;
   wakeWordAccessKey: string;
   wakeWordKeyword: string;
+  /**
+   * When true, voice input opens a confirmation modal after transcription:
+   * PAiA reads the heard text back via Piper TTS and waits for an explicit
+   * Confirm before sending. Helps catch Whisper mishears — especially
+   * valuable on small local models where a mistranscribed goal wastes
+   * an entire agent run.
+   */
+  voiceConfirmBeforeSend: boolean;
 
   // appearance
   theme: Theme;
