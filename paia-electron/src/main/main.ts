@@ -771,6 +771,7 @@ ipcMain.handle('paia:capture-region', async () => {
 ipcMain.handle('paia:ocr', (_e, p: { dataUrl: string; lang?: string }) =>
   screenSvc.ocrImage(p.dataUrl, p.lang),
 );
+ipcMain.handle('paia:ocr-reset-cache', () => screenSvc.resetOcrCache());
 
 // ─── voice / whisper IPC ──────────────────────────────────────────
 

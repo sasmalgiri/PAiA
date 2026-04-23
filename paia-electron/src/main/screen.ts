@@ -18,10 +18,20 @@ type Worker = {
 };
 
 let workerPromise: Promise<Worker> | null = null;
+let workerLang: string | null = null;
 
 async function getOcrWorker(lang = 'eng'): Promise<Worker> {
+  // If the cached worker is for a different language, tear it down so we
+  // don't end up with N resident tesseract workers for multilingual users.
+  if (workerPromise && workerLang !== lang) {
+    const prev = workerPromise;
+    workerPromise = null;
+    workerLang = null;
+    void prev.then((w) => w.terminate().catch(() => { /* ignore */ }));
+  }
   if (workerPromise) return workerPromise;
-  workerPromise = (async () => {
+
+  const p = (async () => {
     const tess = await import('tesseract.js');
     const cacheDir = path.join(app.getPath('userData'), 'tesseract-cache');
     fs.mkdirSync(cacheDir, { recursive: true });
@@ -34,8 +44,26 @@ async function getOcrWorker(lang = 'eng'): Promise<Worker> {
     });
     return w as unknown as Worker;
   })();
-  return workerPromise;
+
+  // Important: DON'T cache the in-flight promise until it resolves. Caching
+  // it up-front means a transient init failure (network blip during the
+  // traineddata download, AV holding the cache file open, etc.) poisons the
+  // cache for the rest of the session — every subsequent OCR call re-raises
+  // the same rejection. If init fails, clear state so the next call retries.
+  workerPromise = p;
+  workerLang = lang;
+  try {
+    const w = await p;
+    return w;
+  } catch (err) {
+    workerPromise = null;
+    workerLang = null;
+    logger.error('tesseract worker init failed — cache cleared so next OCR call will retry', err);
+    throw err;
+  }
 }
+
+const OCR_TIMEOUT_MS = 45_000;
 
 export async function listSources(): Promise<CaptureSource[]> {
   const sources = await desktopCapturer.getSources({
@@ -81,12 +109,38 @@ export async function capturePrimary(): Promise<string> {
 export async function ocrImage(dataUrl: string, lang = 'eng'): Promise<OcrResult> {
   const start = Date.now();
   const worker = await getOcrWorker(lang);
-  const { data } = await worker.recognize(dataUrl);
+  // Guard against a stuck tesseract call hanging the whole agent loop.
+  // We don't have a cancel signal for tesseract itself, so this is a
+  // wall-clock escape hatch — the call may still complete in the
+  // background, but the caller won't be blocked forever.
+  const result = await Promise.race([
+    worker.recognize(dataUrl),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`OCR timed out after ${OCR_TIMEOUT_MS}ms`)), OCR_TIMEOUT_MS),
+    ),
+  ]);
   return {
-    text: data.text.trim(),
-    confidence: data.confidence,
+    text: result.data.text.trim(),
+    confidence: result.data.confidence,
     durationMs: Date.now() - start,
   };
+}
+
+/**
+ * Wipes the tesseract language-data cache. Intended for the Settings
+ * "reset OCR" path when a download got wedged on first run and the
+ * worker can't recover on its own. Safe to call at any time — the next
+ * OCR attempt will re-download the traineddata file.
+ */
+export async function resetOcrCache(): Promise<void> {
+  await shutdownOcr();
+  const cacheDir = path.join(app.getPath('userData'), 'tesseract-cache');
+  try {
+    fs.rmSync(cacheDir, { recursive: true, force: true });
+    logger.info('tesseract cache cleared');
+  } catch (err) {
+    logger.warn('failed to clear tesseract cache', err);
+  }
 }
 
 export async function shutdownOcr(): Promise<void> {
