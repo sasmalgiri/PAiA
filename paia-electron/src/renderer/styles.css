@@ -2099,6 +2099,36 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   .escalation-prompt { animation: none; }
 }
 
+/* ── Confirm modal ───────────────────────────────────────── */
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  animation: confirm-fade 140ms ease-out;
+}
+.confirm-modal {
+  width: min(440px, calc(100vw - 32px));
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.confirm-title { margin: 0; font-size: 15px; font-weight: 600; }
+.confirm-body { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
+.confirm-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+@keyframes confirm-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .confirm-backdrop { animation: none; }
+}
+
 .activity-bar {
   height: 2px;
   width: 100%;

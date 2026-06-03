@@ -223,7 +223,7 @@ export function TeacherDashboard({ state, onClose }: TeacherDashboardProps) {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button type="button" className="danger" onClick={() => void end()}>End for all</button>
-          <button type="button" className="icon-btn" onClick={onClose}>×</button>
+          <button type="button" className="icon-btn" onClick={onClose} title="Close teacher dashboard" aria-label="Close teacher dashboard">×</button>
         </div>
       </header>
 

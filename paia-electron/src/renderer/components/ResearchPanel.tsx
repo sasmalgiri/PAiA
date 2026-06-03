@@ -70,7 +70,7 @@ export function ResearchPanel({ run: initialRun, onClose }: Props) {
             )}
           </div>
         </div>
-        <button type="button" className="icon-btn" onClick={onClose}>×</button>
+        <button type="button" className="icon-btn" onClick={onClose} title="Close research" aria-label="Close research panel">×</button>
       </header>
 
       {run.subQuestions.length > 0 && (

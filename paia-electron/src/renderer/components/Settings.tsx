@@ -39,6 +39,7 @@ import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/
 import { CloudModelConsentModal } from './CloudModelConsentModal';
 import { TaskQueuePanel } from './TaskQueuePanel';
 import { ModelStore } from './ModelStore';
+import { useConfirm } from '../lib/useConfirm';
 
 interface SettingsViewProps {
   settings: Settings;
@@ -352,6 +353,7 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
   const [pendingCloudModel, setPendingCloudModel] = useState<string | null>(null);
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  const { confirm, modal: confirmModal } = useConfirm();
 
   async function refresh() {
     const s = await api.ollamaStatus();
@@ -381,7 +383,13 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
   }
 
   async function doDelete(name: string) {
-    if (!confirm(`Delete model "${name}"?`)) return;
+    const ok = await confirm({
+      title: 'Delete this model?',
+      description: `"${name}" will be removed from Ollama. Re-download takes time and bandwidth.`,
+      confirmLabel: 'Delete model',
+      variant: 'danger',
+    });
+    if (!ok) return;
     await api.ollamaDeleteModel(name);
     await refresh();
   }
@@ -411,6 +419,7 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
 
   return (
     <div className="settings-form">
+      {confirmModal}
       <div className={`status-pill ${reachable ? 'ok' : 'bad'}`}>
         Ollama {reachable ? 'connected' : 'unreachable'} · {installed.length} model(s)
       </div>
@@ -678,6 +687,7 @@ function PersonasTab({ personas, onChanged, settings, onSave }: {
   const [collections, setCollections] = useState<KnowledgeCollection[]>([]);
   const [editingBindsFor, setEditingBindsFor] = useState<string | null>(null);
   const [bindErr, setBindErr] = useState<string>('');
+  const { confirm, modal: confirmModal } = useConfirm();
 
   useEffect(() => {
     void api.listCollections().then(setCollections).catch(() => setCollections([]));
@@ -704,7 +714,14 @@ function PersonasTab({ personas, onChanged, settings, onSave }: {
   }
 
   async function remove(id: string) {
-    if (!confirm('Delete this persona?')) return;
+    const persona = personas.find((p) => p.id === id);
+    const ok = await confirm({
+      title: 'Delete this persona?',
+      description: persona ? `"${persona.name}" will be removed. Conversations using it will fall back to Default.` : undefined,
+      confirmLabel: 'Delete persona',
+      variant: 'danger',
+    });
+    if (!ok) return;
     await api.deletePersona(id);
     await onChanged();
   }
@@ -727,6 +744,7 @@ function PersonasTab({ personas, onChanged, settings, onSave }: {
 
   return (
     <div className="settings-form">
+      {confirmModal}
       {/* ── Smart Router (MoE) ───────────────────────────────────── */}
       <div className="field" style={{ background: 'var(--surface-2, rgba(0,0,0,0.04))', padding: 12, borderRadius: 8, marginBottom: 14 }}>
         <span style={{ fontWeight: 600 }}>Smart router (mixture of experts)</span>
@@ -960,6 +978,7 @@ function KnowledgeTab() {
   const [embedModel, setEmbedModel] = useState('nomic-embed-text');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState('');
+  const { confirm, modal: confirmModal } = useConfirm();
 
   async function refreshCollections() {
     const list = await api.listCollections();
@@ -1008,7 +1027,17 @@ function KnowledgeTab() {
   }
 
   async function removeCollection(id: string) {
-    if (!confirm('Delete this collection and all its documents?')) return;
+    const coll = collections.find((c) => c.id === id);
+    const docCount = active?.id === id ? documents.length : undefined;
+    const ok = await confirm({
+      title: 'Delete this knowledge collection?',
+      description: coll
+        ? `"${coll.name}" and ${docCount ?? 'all'} document${docCount === 1 ? '' : 's'} inside it will be removed. Personas bound to this collection will fall back to the thread-level RAG (or none).`
+        : undefined,
+      confirmLabel: 'Delete collection',
+      variant: 'danger',
+    });
+    if (!ok) return;
     await api.deleteCollection(id);
     if (active?.id === id) setActive(null);
     await refreshCollections();
@@ -1039,7 +1068,14 @@ function KnowledgeTab() {
   }
 
   async function removeDocument(id: string) {
-    if (!confirm('Delete this document?')) return;
+    const doc = documents.find((d) => d.id === id);
+    const ok = await confirm({
+      title: 'Delete this document?',
+      description: doc ? `"${doc.filename}" and its ${doc.chunkCount} chunk(s) will be removed from the collection.` : undefined,
+      confirmLabel: 'Delete document',
+      variant: 'danger',
+    });
+    if (!ok) return;
     await api.deleteDocument(id);
     if (active) await refreshDocuments(active.id);
     await refreshCollections();
@@ -1047,6 +1083,7 @@ function KnowledgeTab() {
 
   return (
     <div className="settings-form">
+      {confirmModal}
       <p className="muted-note">
         Knowledge collections let PAiA answer questions using documents you provide.
         Files are chunked, embedded with a local Ollama model, and stored on disk.
@@ -1740,6 +1777,7 @@ function LicenseTab() {
   const [extRaw, setExtRaw] = useState('');
   const [extMsg, setExtMsg] = useState('');
   const [meters, setMeters] = useState<Awaited<ReturnType<typeof api.meteringSnapshots>>>([]);
+  const { confirm, modal: confirmModal } = useConfirm();
 
   async function refresh() {
     setStatus(await api.licenseStatus());
@@ -1765,7 +1803,13 @@ function LicenseTab() {
   }
 
   async function deactivate() {
-    if (!confirm('Remove this license from this machine?')) return;
+    const ok = await confirm({
+      title: 'Remove this license from this machine?',
+      description: 'You\'ll fall back to the free tier. The license file can be re-activated later using the same blob.',
+      confirmLabel: 'Remove license',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setStatus(await api.licenseDeactivate());
     setMsg('License removed.');
   }
@@ -1786,6 +1830,7 @@ function LicenseTab() {
 
   return (
     <div className="settings-form">
+      {confirmModal}
       <div className={`license-status ${status.effectiveTier}`}>
         <div className="license-tier">{status.effectiveTier.toUpperCase()}</div>
         <div className="license-source">
@@ -2118,6 +2163,7 @@ function MemoryTab() {
   const [reflections, setReflections] = useState<Awaited<ReturnType<typeof api.experienceListReflections>>>([]);
   const [text, setText] = useState('');
   const [scope, setScope] = useState<MemoryScope>('fact');
+  const [errMsg, setErrMsg] = useState('');
 
   async function refresh(): Promise<void> {
     setEntries(await api.memoryList());
@@ -2129,8 +2175,9 @@ function MemoryTab() {
   async function add(): Promise<void> {
     const t = text.trim();
     if (!t) return;
+    setErrMsg('');
     const res = await api.memoryAdd({ scope, text: t });
-    if (!res.ok) { alert(res.error); return; }
+    if (!res.ok) { setErrMsg(res.error || 'Failed to save memory.'); return; }
     setText('');
     void refresh();
   }
@@ -2163,6 +2210,9 @@ function MemoryTab() {
         />
         <button type="button" className="primary" onClick={() => void add()}>Save</button>
       </div>
+      {errMsg && (
+        <div className="muted-note" style={{ color: 'var(--danger, #d66)', marginTop: 4 }}>{errMsg}</div>
+      )}
       <div className="memory-list">
         {entries.length === 0 && (
           <div className="muted-note" style={{ textAlign: 'center', padding: '16px 12px', border: '1px dashed var(--border)', borderRadius: 6 }}>
@@ -2209,6 +2259,7 @@ function MemoryTab() {
 function ConnectorsTab() {
   const [rows, setRows] = useState<{ descriptor: ConnectorDescriptor; config: ConnectorConfig; status: ConnectorStatus }[]>([]);
   const [busy, setBusy] = useState<ConnectorId | null>(null);
+  const [errMsg, setErrMsg] = useState('');
 
   async function refresh(): Promise<void> {
     setRows(await api.connectorsList());
@@ -2223,9 +2274,13 @@ function ConnectorsTab() {
 
   async function connect(id: ConnectorId): Promise<void> {
     setBusy(id);
+    setErrMsg('');
     try {
       const res = await api.connectorsConnect(id);
-      if (!res.ok) alert(`Connect failed: ${res.error}`);
+      if (!res.ok) {
+        const which = rows.find((r) => r.descriptor.id === id)?.descriptor.name ?? id;
+        setErrMsg(`${which} connection failed: ${res.error ?? 'unknown error'}`);
+      }
     } finally {
       setBusy(null);
       void refresh();
@@ -2238,6 +2293,11 @@ function ConnectorsTab() {
         Connectors require your own OAuth client ID / secret so tokens never pass through
         a third party. Register a client in the relevant provider console (Google / GitHub / Slack).
       </div>
+      {errMsg && (
+        <div className="muted-note" style={{ color: 'var(--danger, #d66)', padding: '6px 10px', background: 'rgba(214,102,102,0.08)', border: '1px solid rgba(214,102,102,0.25)', borderRadius: 6 }}>
+          {errMsg}
+        </div>
+      )}
       {rows.map(({ descriptor, config, status }) => (
         <div key={descriptor.id} className="connector-row">
           <div className="connector-head">

@@ -96,7 +96,7 @@ export function Canvas({ threadId, onClose, initialArtifactId }: Props) {
         <div className="canvas-header-actions">
           <button type="button" className="secondary" onClick={() => setTitlePromptOpen('code')}>+ New</button>
           <button type="button" className="secondary" onClick={() => setTitlePromptOpen('whiteboard')} title="New whiteboard">+ Whiteboard</button>
-          <button type="button" className="icon-btn" onClick={onClose}>×</button>
+          <button type="button" className="icon-btn" onClick={onClose} title="Close Canvas" aria-label="Close Canvas">×</button>
         </div>
       </header>
 

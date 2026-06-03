@@ -319,7 +319,7 @@ export function App() {
     } catch (err) {
       const upg = detectUpgradeError(err);
       if (upg) setUpgradeInfo(upg);
-      else alert(err instanceof Error ? err.message : String(err));
+      else setChatError(friendlyError(err instanceof Error ? err.message : String(err)));
     }
   }, [settings, currentThread]);
 
@@ -479,7 +479,7 @@ export function App() {
     } catch (err) {
       const upg = detectUpgradeError(err);
       if (upg) setUpgradeInfo(upg);
-      else alert(err instanceof Error ? err.message : String(err));
+      else setChatError(friendlyError(err instanceof Error ? err.message : String(err)));
     }
   }, [settings, currentThread]);
 

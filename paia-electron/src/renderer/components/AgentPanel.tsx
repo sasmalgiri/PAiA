@@ -65,7 +65,7 @@ export function AgentPanel({ run: initialRun, onClose, approval, onApprove }: Ag
               Abort
             </button>
           )}
-          <button type="button" className="icon-btn" onClick={onClose}>×</button>
+          <button type="button" className="icon-btn" onClick={onClose} title="Close agent panel" aria-label="Close agent panel">×</button>
         </div>
       </header>
 
