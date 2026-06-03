@@ -6,6 +6,260 @@ and this project loosely follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## v2.0.0 — 2026-06-04 (Mixture of Experts + Brain Escape + Polish Bar)
+
+The major release. v1 was a feature-complete assistant whose ceiling was
+the 3B model behind it. v2 raises the ceiling (hardware-aware Model Store,
+cloud escalation for hard queries, JSON-shim that makes small models
+reliable) and polishes the surface (real confirm modals, contextual tip
+cards, a static accessibility pass, a per-message diagnostic inspector).
+
+Two bodies of work shipped together:
+
+**Mixture of Experts** turns the 56-persona pool into a real council
+system — every persona can have its own knowledge stack, a router picks
+the best one (or several) per query, and the council orchestrates
+parallel expert calls with a synthesiser merge.
+
+**Brain Escape + Polish Bar (v2 plan)** is the brain ceiling lift plus
+the polish work that converts trial users into paying ones.
+
+### Added — Mixture of Experts
+
+**Per-persona RAG binding** (`Persona.ragCollectionIds`)
+- Every persona can be bound to one or more knowledge stacks
+- When the persona is active on a thread, its bound collections are
+  auto-queried alongside any the user attached to the thread (union,
+  de-duplicated)
+- Settings → Personas: per-row "Bind knowledge…" expander; binding
+  also available in the create form
+- PersonaPicker shows a 📚 chip with the bound count
+- Built-in personas ship with no bindings — users curate their own
+
+**Smart router** (`src/main/personaRouter.ts`)
+- Two-stage routing over every persona in the pool:
+  (1) semantic pre-filter with `nomic-embed-text` cosine similarity →
+  (2) LLM rerank picks the final 1–N
+- Embedding cache at `userData/persona-embeddings.json`, invalidated
+  per-persona by FNV-1a hash of the system prompt
+- JSONL decision log at `userData/router.log`
+- Graceful fallback chain: LLM fail → semantic top-N; embed fail →
+  all personas as candidates
+- Settings → Personas: `autoRoutePersona: 'off' | 'single' | 'council'`,
+  `routerPoolSize`, recent-decisions debug pane
+
+**Council mode** (`src/main/council.ts` + `CouncilPanel.tsx`)
+- `/council <question>` or auto-route in council mode fires N parallel
+  expert calls (each with that persona's RAG bound in), then streams
+  a synthesis pass that flags disagreements
+- Per-expert answers persisted as a JSON payload attachment so the
+  panel re-renders after a reload
+- Side-by-side columns for each expert below the synthesised reply
+- Falls back to single mode when the router returns only 1 pick
+
+**Long-doc map-reduce** (`src/main/mapReduce.ts` + `MapReducePanel.tsx`)
+- `/longread <question>` chunks the most recent text/PDF attachment
+  in the thread, processes chunks in parallel waves (default 4),
+  filters non-relevant chunks, then synthesises
+- Hierarchical reduce for documents that exceed 6 partials
+- Persona lens: if the thread has an active persona, each map call
+  reads through that persona's eyes
+- Progress bar with chunk-level provenance
+
+**Ollama parallel-slots guidance**
+- Platform-aware setup snippet (Windows / macOS / Linux) in Settings
+  → Personas when auto-route is enabled — without `OLLAMA_NUM_PARALLEL=4`,
+  Ollama queues council and longread requests serially
+
+### Added — Brain Escape (Phase A)
+
+**Hardware-aware Model Store** (`src/main/hardware.ts` + `ModelStore.tsx`)
+- Boot probe of total RAM, free RAM, CPU model + threads
+- Platform-specific GPU detection: PowerShell on Windows,
+  `system_profiler` on macOS, `nvidia-smi` → `lspci` fallback on Linux
+- All probes have 3–6 s timeouts; failed probes degrade to `gpu: null`
+- Tier classifier (lightweight / comfortable / strong / moe-class)
+  based on RAM + VRAM; Apple Silicon read as unified memory
+- Curated model recommendations per tier with parameter count, context
+  window, approx download size, best-for tags
+- >10 GB downloads gated behind a confirm dialog
+- Wired into Settings → Models tab AND Onboarding step 2 (existing
+  3-preset list kept behind a details expander for users who want it)
+- Cache at `userData/hardware.json` with version key
+- Concurrent `probe()` calls coalesce onto a single in-flight Promise
+
+**Cloud escalation router** (`EscalationPrompt.tsx`)
+- Router classifies each query's difficulty alongside the persona pick:
+  `trivial | moderate | hard`
+- When local model + hard query + cloud configured, an inline banner
+  offers one-click promotion for that single turn:
+  - "Yes, this turn" — use cloud for this send only
+  - "Yes, always for hard" — flip setting to `auto`
+  - "No, keep local" — use local
+- Settings → Personas: `cloudEscalation: 'off' | 'ask' | 'auto'` +
+  `cloudEscalationModel` (qualified id like `anthropic/claude-sonnet-4-6`)
+- PII redaction continues to run BEFORE the provider call; the
+  escalated model receives the redacted text
+- Council mode is excluded from escalation by design (council relies
+  on parallel local experts)
+
+**Structured-output JSON shim** (`src/shared/structuredOutput.ts` +
+`src/main/structuredOutput.ts`)
+- Pure JSON extractor that strips markdown fences, finds the largest
+  balanced object, handles escaped quotes and string-internal braces
+- Shape validator with paths for nested failures (e.g. `items[1].id`)
+- `requestJson({model, system, user, schema, maxAttempts})` wraps
+  `providers.chat()` with:
+  - `format: 'json'` sent to Ollama (constrains sampling at API level)
+  - Self-correction retry on schema validation failure
+  - Drops `format: 'json'` after a provider 400 (older Ollama compat)
+- Migrated `personaRouter` from forgiving regex to `requestJson()`
+- 19 new tests covering extraction + validation edge cases
+
+### Added — Polish Bar (Phase E)
+
+**ConfirmModal + useConfirm hook** (`src/renderer/components/ConfirmModal.tsx`,
+`src/renderer/lib/useConfirm.tsx`)
+- Promise-based `useConfirm()` hook so destructive paths read:
+  `const ok = await confirm({title, variant: 'danger'}); if (!ok) return;`
+- Focus trap, ESC cancels, `role="alertdialog"`,
+  `aria-labelledby` + `aria-describedby`
+- 'danger' variant auto-focuses Cancel
+- Migrated 5 of the most-visible confirms (persona delete, model
+  delete, knowledge collection / document delete, license deactivate);
+  16 lower-impact paths deferred to v2.1 (pattern is set)
+
+**Inline error notices replace alert()**
+- App.tsx agent + research errors → `setChatError` with `friendlyError`
+- Settings MemoryTab failed-add → inline errMsg under composer
+- Settings ConnectorsTab failed-connect → inline errMsg above rows
+  (names the connector)
+- All 4 stranded `alert()` calls in the codebase are gone
+
+**Contextual tip cards** (`TipCard.tsx` + `tipCards.ts`)
+- Five anchored speech-bubble tips, one per high-value feature
+  (command palette, screen capture, smart router, /longread,
+  settings search)
+- Best-fit positioning (prefer below, fall back to right, then above)
+- ResizeObserver + scroll/resize listeners reposition on the fly
+- Existing onboarded users get all tip IDs pre-populated into
+  `settings.tipsShown` so they aren't nagged
+- Settings → General: "Show feature tips" toggle (default on)
+- Onboarding telemetry: `onboarding:first-message`,
+  `onboarding:engaged`, `feature-discovery:{council,longread,agent,
+  research}` — all routed through the existing opt-in analytics pipe
+
+**Static accessibility pass + ACCESSIBILITY.md**
+- Focus trap + `role="dialog"` + `aria-modal` added to: CouncilPanel,
+  MapReducePanel, PersonaPicker (they had partial or no contract)
+- Forced-colors (High Contrast) block extended to cover Model Store
+  recommended card, Council panel, Confirm modal, Escalation prompt,
+  Tip card, Route chip — all get a `2px solid Highlight` border with
+  `forced-color-adjust: none`
+- Tip-card arrow hidden in forced-colors (no system color matches)
+- Badge `.accent` / `.ok` re-map to system Highlight / ButtonText
+- New `ACCESSIBILITY.md` documents the keyboard nav contract per
+  surface, ARIA role table, live region behavior, forced-colors +
+  reduced-motion coverage, heading hierarchy gaps, and the
+  manual-verification list (7 flows that need an actual NVDA /
+  VoiceOver run)
+
+**Observability inspector** (`MessageInspector.tsx`)
+- Collapsible 🔍 Inspector pane under every assistant message
+- Timing: per-phase bar chart (redact → memory → RAG → build →
+  first-token → generate) with legend and total wall time
+- Context: persona, model (cloud chip if applicable), active window
+  app, memory injected y/n, RAG collection count
+- RAG citations: filename + relevance score + chunk ordinal
+- Redaction count + input/output char counts
+- Persisted as `'message-telemetry'` attachment on the assistant
+  message so the pane re-renders correctly after a full restart
+- Settings → Privacy: opt-out toggle "Persist per-message
+  diagnostic data" (default on; flip off on shared machines)
+
+### Changed
+
+- `Persona` interface gained `ragCollectionIds?: string[]`
+- `DbAttachment.kind` union gained `'council-payload'`,
+  `'map-reduce-payload'`, `'message-telemetry'`
+- `Settings` gained: `autoRoutePersona`, `routerPoolSize`,
+  `routerIntroAcknowledged`, `cloudEscalation`, `cloudEscalationModel`,
+  `defaultModelTier`, `tipsShown`, `tipsDisabled`, `inspectorEnabled`
+- Slash command registry: `/council`, `/experts`, `/longread`,
+  `/mapreduce` added
+- Chat handler (`src/main/main.ts`) instrumented with timing
+  accumulators per phase
+- `providers.chat()` and `OllamaClient.chat()` accept `options.format`
+- `personaRouter.route()` returns optional `difficulty` field
+- New IPC channels: `paia:persona-route`, `paia:persona-router-refresh`,
+  `paia:persona-router-recent`, `paia:council-start`,
+  `paia:council-abort`, `paia:council-event`, `paia:map-reduce-start`,
+  `paia:map-reduce-abort`, `paia:map-reduce-event`, `paia:hardware-probe`,
+  `paia:hardware-defaults`, `paia:hardware-recommendations`
+
+### Fixed
+
+- Trial-expired modal rendered inside the 120 px ball window; now
+  switches to panel view before showing
+- `hardware.execWithTimeout` cleared the SIGKILL timer on successful
+  exit so it no longer holds a dead-child reference for the full
+  timeout window
+- `hardware.probe()` concurrent callers coalesce onto a single
+  in-flight Promise instead of duplicating GPU detection
+- `structuredOutput.requestJson` drops `format: 'json'` on provider
+  400 and retries without — fixes older Ollama compat
+
+### Tests
+
+- 64 → 83 tests (+19 from `structuredOutput.test.ts`)
+- Full suite passes throughout the v2 series
+
+### Files added
+
+- `src/main/hardware.ts`, `src/main/personaRouter.ts`,
+  `src/main/council.ts`, `src/main/mapReduce.ts`,
+  `src/main/structuredOutput.ts`
+- `src/renderer/components/ModelStore.tsx`,
+  `src/renderer/components/CouncilPanel.tsx`,
+  `src/renderer/components/MapReducePanel.tsx`,
+  `src/renderer/components/EscalationPrompt.tsx`,
+  `src/renderer/components/TipCard.tsx`,
+  `src/renderer/components/MessageInspector.tsx`,
+  `src/renderer/components/ConfirmModal.tsx`
+- `src/renderer/lib/useConfirm.tsx`, `src/renderer/lib/tipCards.ts`
+- `src/shared/structuredOutput.ts`, `src/shared/structuredOutput.test.ts`
+- `ACCESSIBILITY.md`
+
+### Security audit findings (Phase E end)
+
+Most new paths from Phase A + E1–E4 came up clean. One medium-severity
+finding led to the inspector opt-out (above). For the record, the
+following were reviewed and intentionally not changed:
+
+- A1 hardware exec — all commands are hardcoded string literals; no
+  user input flows in
+- A2 escalation — redaction runs before the provider call; cloud-allow
+  flag, classroom policy, and tier feature flag all checked
+- A3 retry loop — `maxAttempts` caps retries; self-correction prompts
+  still face the schema validator
+- E2 tip cards — `data-tip-anchor` selectors are compile-time
+  constants; no `dangerouslySetInnerHTML` in TipCard
+- E3 a11y — pure CSS + ARIA additions; no new attack surface
+
+### Deferred to v2.1
+
+- 16 lower-impact `confirm()` call sites (voice delete, MCP server
+  remove, scheduled task / autopilot rule delete, API key regen,
+  beta invite revoke, etc.) — pattern is set, migration is mechanical
+- `aria-pressed` on PersonaPicker category tabs + cards
+- Programmatic `<h1>` per Settings tab (heading hierarchy gap)
+- Sidebar detach button keyboard visibility verification
+- Per-expert token streaming in Council (currently waits for each
+  expert to finish)
+- Auto-trigger `/longread` when a long doc is attached
+
+---
+
 ## v0.4.0 — 2026-04-19
 
 The "agentic" release. PAiA stops being "a chat window with extras" and becomes
