@@ -3,7 +3,7 @@
 A floating ball that lives in the corner of your screen. Click it to chat,
 talk, or capture your screen — everything runs locally on your machine.
 
-> **Status:** Phase 1 MVP. Heavy production-level rewrite. See [ROADMAP.md](ROADMAP.md).
+> **Status:** v2.0.0 — Mixture of Experts release. See [CHANGELOG.md](CHANGELOG.md) for the full feature set and [ROADMAP.md](ROADMAP.md) for what's next.
 
 ## Why PAiA exists
 
@@ -39,13 +39,18 @@ audio stay on your machine by default.
 - File attachments (drag images, drop text/markdown/JSON/CSV files).
 - Streaming responses, token by token.
 
-### Personas
-Seven built-ins, plus user-defined: Default · Code Helper · Writing Assistant · Translator · Researcher · Brainstormer · Privacy Auditor.
+### Personas (Mixture of Experts pool — 56 built-ins + user-defined)
 
-Create your own with a name, emoji, and system prompt.
+Seven foundational personas (Default · Code Helper · Writing Assistant · Translator · Researcher · Brainstormer · Privacy Auditor) plus 49 professional specialists covering engineering, science, medical, legal, business, creative, education, and ops domains.
+
+Each persona can be bound to its own knowledge stacks (Settings → Personas → "Bind knowledge…"). When that persona is active, its stacks are auto-queried alongside any the thread already had.
+
+The smart router (Settings → Personas → Smart router) picks the best 1–N personas per query — semantic pre-filter via embeddings, then a fast LLM rerank. Run as `single` (auto-switches persona) or `council` (fires N parallel expert calls and synthesises).
+
+Create your own with a name, emoji, system prompt, and optional knowledge stack bindings.
 
 ### Slash commands
-Type `/` to see the menu. 11 built-ins:
+Type `/` to see the menu. Built-ins include:
 
 | Command | What it does |
 |---|---|
@@ -58,6 +63,13 @@ Type `/` to see the menu. 11 built-ins:
 | `/code <description>` | Generate code |
 | `/tone <tone> \| <text>` | Rewrite in a different tone |
 | `/screen` | Capture screen + OCR + ask "what's on my screen?" |
+| `/council <question>` | Fire N parallel expert calls (router-picked or manual) and synthesise a merged reply |
+| `/experts <question>` | Alias for `/council` |
+| `/longread <question>` | Map-reduce over the most recent attached PDF/text file with chunk-level provenance |
+| `/agent <goal>` | Start an autonomous agent run (plan → act → observe, per-tool approval gate) |
+| `/research <question>` | Run the Deep Research pipeline (decompose → search → fetch → cited synthesis) |
+| `/canvas` | Open the side-panel artifact editor |
+| `/remember <fact>` / `/recall <query>` | Cross-session memory operations |
 | `/new` | Start a new conversation |
 | `/clear` | Delete the current conversation |
 
@@ -75,16 +87,20 @@ TTS uses `speechSynthesis` (OS-native voices, fully offline).
 - The OCR text is automatically attached to a chat message asking the assistant to interpret it.
 - The screenshot is also attached as an image — vision-capable models like `llava` see it directly.
 
-### Settings (six tabs)
-- **General** — theme (light/dark/system), always-on-top, start at login, cloud models opt-in, auto-update toggle
-- **Models** — list installed Ollama models with size, pull new ones with live progress, delete, pick default
-- **Personas** — full CRUD on user personas
-- **Voice** — STT engine, language, TTS toggle
-- **Hotkeys** — Electron accelerator strings for show/hide, capture, push-to-talk
-- **About** — version, platform, electron/node, data directory, check for updates
+### Settings (24 tabs in 6 groups, with live keyword search)
+
+Search at the top of Settings jumps to any tab by name, label, or curated keyword (e.g. typing `gmail`, `cron`, `voice`). Tabs are grouped as Basics / AI & chat / Power features / Network & devices / Classroom & lab / Account.
+
+- **Basics** — General, Models (with the hardware-aware Model Store), Personas (incl. router + cloud escalation), Voice, Hotkeys, About
+- **AI & chat** — Knowledge (RAG), Memory, Tools (MCP servers), Connectors, Schedule, Agent
+- **Power features** — Ambient, Plugins, Canvas, Whiteboard, Browser
+- **Network & devices** — Companion, Sync, API server, Remote browser
+- **Classroom & lab** — Classroom mode, Enforcement
+- **Account** — License, Beta, Privacy (including the observability-inspector opt-out)
 
 ### First-run wizard
-Three steps: welcome → connect Ollama (with one-click pull of `llama3.2`) → pick theme/voice defaults.
+
+Five steps: language → connect Ollama (with the hardware-aware Model Store recommending sizes for your machine) → privacy preferences → quick-start tips. Cloud providers (OpenAI / Anthropic) are available as a fallback path if you'd rather skip Ollama.
 
 ### Distribution
 - electron-builder targets: **Windows NSIS**, **macOS DMG** (x64 + arm64), **Linux AppImage + deb**
