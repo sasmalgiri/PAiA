@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DbMessage } from '../../shared/types';
 import { renderMarkdown, renderDiagramsInside } from '../lib/markdown';
 import { api } from '../lib/api';
+import { MessageInspector } from './MessageInspector';
 
 interface MessageProps {
   message: DbMessage;
@@ -178,6 +179,9 @@ function AssistantMessage({
             )}
           </div>
         </div>
+      )}
+      {hasRealId && !streaming && (
+        <MessageInspector attachments={message.attachments} />
       )}
     </div>
   );

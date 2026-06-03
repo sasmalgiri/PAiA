@@ -522,8 +522,34 @@ interface ChatPayload {
 ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
   const { threadId, model, systemPrompt, userText, attachments } = payload;
 
+  // E4: telemetry accumulator. Filled phase by phase; persisted as an
+  // attachment on the assistant message after the generation completes.
+  const tStart = Date.now();
+  const telemetry: {
+    redactionMs: number;
+    activeWindowMs: number;
+    memoryMs: number;
+    ragMs: number;
+    promptBuildMs: number;
+    timeToFirstTokenMs: number;
+    totalGenerationMs: number;
+    activeWindowApp: string | null;
+    memoryInjected: boolean;
+    ragCollectionIds: string[];
+    ragCitations: Array<{ filename: string; score: number; ordinal: number }>;
+    inputCharCount: number;
+  } = {
+    redactionMs: 0, activeWindowMs: 0, memoryMs: 0, ragMs: 0,
+    promptBuildMs: 0, timeToFirstTokenMs: 0, totalGenerationMs: 0,
+    activeWindowApp: null, memoryInjected: false,
+    ragCollectionIds: [], ragCitations: [],
+    inputCharCount: 0,
+  };
+
   // 1. Redact PII before persisting or sending.
+  const tRed = Date.now();
   const redacted = redact(userText);
+  telemetry.redactionMs = Date.now() - tRed;
 
   // 2. Persist the user message.
   db.addMessage(threadId, 'user', redacted.redacted, redacted.matchCount, attachments);
@@ -531,28 +557,32 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
   // 3. Optionally include the active window's title/app as context.
   let augmentedSystem = systemPrompt;
   if (settingsStore.load().includeActiveWindow) {
+    const tAw = Date.now();
     try {
       const aw = await getActiveWindow();
       if (aw && (aw.title || aw.appName)) {
         augmentedSystem += `\n\n[Context] The user's foreground window when they sent this message was: "${aw.title}" in ${aw.appName || 'unknown app'}.`;
+        telemetry.activeWindowApp = aw.appName || null;
       }
     } catch {
       /* non-fatal */
     }
+    telemetry.activeWindowMs = Date.now() - tAw;
   }
+  const tMem = Date.now();
   try {
     const memCtx = await memorySvc.buildContextBlock(redacted.redacted);
     if (memCtx) {
       augmentedSystem = `${augmentedSystem}\n\n${memCtx}`;
+      telemetry.memoryInjected = true;
     }
   } catch (err) {
     logger.warn('memory context build failed (continuing)', err);
   }
+  telemetry.memoryMs = Date.now() - tMem;
 
+  const tRag = Date.now();
   try {
-    // Union of (a) collections the user manually attached to this thread
-    // and (b) collections bound to the active persona. De-duplicated so
-    // we don't double-count chunks if a stack is bound both ways.
     const threadCollections = db.listThreadCollections(threadId);
     const thread = db.getThread(threadId);
     const personaBound: string[] = (() => {
@@ -561,13 +591,17 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
       return p?.ragCollectionIds ?? [];
     })();
     const collectionIds = Array.from(new Set([...threadCollections, ...personaBound]));
+    telemetry.ragCollectionIds = collectionIds;
     if (collectionIds.length > 0) {
       const chunks = await rag.retrieve(collectionIds, redacted.redacted, 5);
       if (chunks.length > 0) {
         const ctx = rag.formatContext(chunks);
-        // Append to augmentedSystem (which may already include the active
-        // window context from step 3) rather than overwriting it.
         augmentedSystem = `${augmentedSystem}\n\n${ctx}`;
+        telemetry.ragCitations = chunks.map((c) => ({
+          filename: c.filename ?? '(unknown)',
+          score: c.score ?? 0,
+          ordinal: c.ordinal,
+        }));
         event.sender.send('paia:rag-cited', {
           threadId,
           sources: chunks.map((c, i) => ({
@@ -582,8 +616,10 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
   } catch (err) {
     logger.warn('RAG retrieval failed (continuing without context):', err);
   }
+  telemetry.ragMs = Date.now() - tRag;
 
   // 4. Build the chat history (augmented system prompt + persisted thread messages).
+  const tBuild = Date.now();
   const history = db.listMessages(threadId);
   const messages: ChatMessage[] = [
     { role: 'system', content: augmentedSystem },
@@ -596,6 +632,8 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
       return msg;
     }),
   ];
+  telemetry.promptBuildMs = Date.now() - tBuild;
+  telemetry.inputCharCount = messages.reduce((sum, m) => sum + m.content.length, 0);
 
   // 5. Stream the response back to the renderer + assemble the full text.
   //    Routed through the provider dispatcher so cloud providers (OpenAI,
@@ -625,7 +663,10 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
       rejectWatchdog = rej;
     });
     armWatchdog();
+    const tGenStart = Date.now();
+    let firstTokenAt = 0;
     const chatPromise = providers.chat(model, messages, (token) => {
+      if (!firstTokenAt) firstTokenAt = Date.now();
       assembled += token;
       armWatchdog();
       event.sender.send('paia:chat-token', { threadId, token });
@@ -633,9 +674,55 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
     const finalText = await Promise.race([chatPromise, watchdogPromise]);
     if (watchdog) clearTimeout(watchdog);
     const text = finalText || assembled;
+    telemetry.timeToFirstTokenMs = firstTokenAt ? firstTokenAt - tGenStart : 0;
+    telemetry.totalGenerationMs = Date.now() - tGenStart;
 
-    // 6. Persist the assistant reply.
-    db.addMessage(threadId, 'assistant', text, 0);
+    // 6. Persist the assistant reply plus a telemetry payload so the
+    // observability inspector can render the pipeline state for this
+    // message even after a full restart.
+    const thread = db.getThread(threadId);
+    const persona = thread?.personaId ? personas.getPersona(thread.personaId) : null;
+    const fullTelemetry = {
+      version: 1 as const,
+      startedAt: tStart,
+      finishedAt: Date.now(),
+      durations: {
+        redactionMs: telemetry.redactionMs,
+        activeWindowMs: telemetry.activeWindowMs,
+        memoryMs: telemetry.memoryMs,
+        ragMs: telemetry.ragMs,
+        promptBuildMs: telemetry.promptBuildMs,
+        timeToFirstTokenMs: telemetry.timeToFirstTokenMs,
+        totalGenerationMs: telemetry.totalGenerationMs,
+        totalMs: Date.now() - tStart,
+      },
+      context: {
+        personaId: persona?.id ?? null,
+        personaName: persona?.name ?? null,
+        model,
+        isCloudModel: /^(openai|anthropic|openai-compatible):/.test(model),
+        escalated: false,
+        activeWindowApp: telemetry.activeWindowApp,
+        memoryInjected: telemetry.memoryInjected,
+        ragCollectionIds: telemetry.ragCollectionIds,
+        ragCitations: telemetry.ragCitations,
+      },
+      redaction: { matchCount: redacted.matchCount },
+      generation: {
+        inputCharCount: telemetry.inputCharCount,
+        outputCharCount: text.length,
+      },
+    };
+    const telemetryJson = JSON.stringify(fullTelemetry);
+    db.addMessage(threadId, 'assistant', text, 0, [
+      {
+        kind: 'message-telemetry',
+        mimeType: 'application/json',
+        filename: 'telemetry.json',
+        sizeBytes: telemetryJson.length,
+        content: telemetryJson,
+      },
+    ]);
     event.sender.send('paia:chat-done', { threadId, text });
 
     // 7. Schedule a post-turn reflection — PAiA reviews the exchange

@@ -67,7 +67,7 @@ export interface DbThread {
 export interface DbAttachment {
   id: string;
   messageId: string;
-  kind: 'image' | 'text' | 'pdf' | 'screen' | 'council-payload' | 'map-reduce-payload';
+  kind: 'image' | 'text' | 'pdf' | 'screen' | 'council-payload' | 'map-reduce-payload' | 'message-telemetry';
   filename: string;
   mimeType: string;
   sizeBytes: number;
@@ -322,6 +322,46 @@ export interface ModelRecommendation {
   approxSizeGb: number;
   bestFor: string[];
   warnLargeDownload: boolean;
+}
+
+// ─── observability inspector (E4) ────────────────────────────────
+
+/** Per-message diagnostic payload. Persisted as a 'message-telemetry'
+ *  attachment on the assistant message so the inspector can render
+ *  the full pipeline state after a reload. Read-only — never used in
+ *  retrieval logic. */
+export interface MessageTelemetry {
+  version: 1;
+  startedAt: number;
+  finishedAt: number;
+  durations: {
+    redactionMs: number;
+    activeWindowMs: number;
+    memoryMs: number;
+    ragMs: number;
+    promptBuildMs: number;
+    timeToFirstTokenMs: number;
+    totalGenerationMs: number;
+    totalMs: number;
+  };
+  context: {
+    personaId: string | null;
+    personaName: string | null;
+    model: string;
+    isCloudModel: boolean;
+    escalated: boolean;
+    activeWindowApp: string | null;
+    memoryInjected: boolean;
+    ragCollectionIds: string[];
+    ragCitations: Array<{ filename: string; score: number; ordinal: number }>;
+  };
+  redaction: {
+    matchCount: number;
+  };
+  generation: {
+    inputCharCount: number;
+    outputCharCount: number;
+  };
 }
 
 // ─── screen capture / OCR ──────────────────────────────────────────

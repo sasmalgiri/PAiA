@@ -2203,6 +2203,88 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   .tip-card { animation: none; }
 }
 
+/* ── Message Inspector ───────────────────────────────────── */
+.inspector {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.inspector-summary {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  list-style: none;
+  user-select: none;
+}
+.inspector-summary::-webkit-details-marker { display: none; }
+.inspector-summary:hover { background: var(--bg-2); }
+.inspector-body {
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border-radius: 6px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.inspector-body h5 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.inspector-bar { display: flex; flex-direction: column; gap: 6px; }
+.inspector-bar-track {
+  height: 8px;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1, rgba(0,0,0,0.06));
+}
+.inspector-bar-seg { height: 100%; transition: filter 120ms; }
+.inspector-bar-seg:hover { filter: brightness(1.2); }
+.seg-redact { background: #888; }
+.seg-active { background: #bda; }
+.seg-memory { background: #d9b58c; }
+.seg-rag    { background: #6a9; }
+.seg-build  { background: #9a8; }
+.seg-ttft   { background: #5b9dd9; }
+.seg-gen    { background: #4a7eb0; }
+.inspector-bar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+}
+.inspector-legend { display: inline-flex; align-items: center; gap: 4px; }
+.inspector-legend .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.inspector-legend.seg-redact .dot { background: #888; }
+.inspector-legend.seg-active .dot { background: #bda; }
+.inspector-legend.seg-memory .dot { background: #d9b58c; }
+.inspector-legend.seg-rag .dot { background: #6a9; }
+.inspector-legend.seg-build .dot { background: #9a8; }
+.inspector-legend.seg-ttft .dot { background: #5b9dd9; }
+.inspector-legend.seg-gen .dot { background: #4a7eb0; }
+.inspector-dl {
+  display: grid;
+  grid-template-columns: minmax(110px, max-content) 1fr;
+  gap: 2px 14px;
+  margin: 0;
+}
+.inspector-dl > div { display: contents; }
+.inspector-dl dt { color: var(--muted); }
+.inspector-dl dd { margin: 0; color: var(--text); font-family: monospace; font-size: 11px; }
+.inspector-citations { margin: 0; padding-left: 16px; font-size: 11px; }
+.inspector-citations li { padding: 2px 0; }
+
 .activity-bar {
   height: 2px;
   width: 100%;
