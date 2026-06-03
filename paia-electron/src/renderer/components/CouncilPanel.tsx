@@ -15,8 +15,9 @@
 //   │   …                                          │
 //   └──────────────────────────────────────────────┘
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { renderMarkdown } from '../lib/markdown';
+import { useFocusTrap } from '../lib/focusTrap';
 
 export interface ExpertAnswer {
   personaId: string;
@@ -45,6 +46,8 @@ interface Props {
 
 export function CouncilPanel({ state, onClose, onAbort }: Props) {
   const [showExperts, setShowExperts] = useState(true);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(panelRef, { onClose: () => { if (state.status === 'done' || state.status === 'error') onClose(); } });
 
   // ESC closes when not running.
   useEffect(() => {
@@ -63,9 +66,16 @@ export function CouncilPanel({ state, onClose, onAbort }: Props) {
 
   return (
     <div className="council-backdrop" onClick={() => { if (!inProgress) onClose(); }}>
-      <div className="council-panel" role="dialog" aria-label="Council of experts" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="council-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="council-panel-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="council-header">
-          <div className="council-title">
+          <div id="council-panel-title" className="council-title">
             <span aria-hidden>🏛</span>
             <span>Council on: <em>{state.question.length > 80 ? state.question.slice(0, 77) + '…' : state.question}</em></span>
           </div>

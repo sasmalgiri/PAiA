@@ -7,8 +7,9 @@
 //   done        — show final answer with a "N of M chunks contributed" stat
 //   error       — explain what went wrong
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { renderMarkdown } from '../lib/markdown';
+import { useFocusTrap } from '../lib/focusTrap';
 
 export interface MapReduceState {
   runId: string | null;
@@ -30,6 +31,8 @@ interface Props {
 }
 
 export function MapReducePanel({ state, onClose, onAbort }: Props) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(panelRef, { onClose: () => { if (state.status === 'done' || state.status === 'error') onClose(); } });
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       if (e.key === 'Escape' && (state.status === 'done' || state.status === 'error')) {
@@ -45,9 +48,16 @@ export function MapReducePanel({ state, onClose, onAbort }: Props) {
 
   return (
     <div className="council-backdrop" onClick={() => { if (!inProgress) onClose(); }}>
-      <div className="council-panel" role="dialog" aria-label="Long-read map-reduce" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="council-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="mapreduce-panel-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         <header className="council-header">
-          <div className="council-title">
+          <div id="mapreduce-panel-title" className="council-title">
             <span aria-hidden>📚</span>
             <span>
               Long-read of <em>{state.documentLabel}</em>:

@@ -1594,6 +1594,26 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   button.primary, button.secondary, button.danger {
     border: 1px solid ButtonText;
   }
+  /* v2: ensure accent-bordered cards remain perceivable in High Contrast.
+     forced-colors strips background gradients so we lean on system
+     border colors instead. */
+  .model-card.recommended,
+  .escalation-prompt,
+  .tip-card,
+  .route-chip,
+  .council-panel,
+  .confirm-modal {
+    border: 2px solid Highlight;
+    forced-color-adjust: none;
+  }
+  .badge.accent { background: Highlight; color: HighlightText; border: 1px solid Highlight; }
+  .badge.ok    { background: ButtonText; color: ButtonFace; border: 1px solid ButtonText; }
+  /* The tip-card arrow uses an accent-colored triangle; in forced-colors
+     we hide the arrow rather than render it in the wrong system color. */
+  .tip-arrow { display: none; }
+  /* Model-card progress bar — solid background gets stripped, keep border. */
+  .model-card-progress { border: 1px solid ButtonText; }
+  .model-card-progress-bar { background: Highlight; }
 }
 
 .sidebar-item-detach {

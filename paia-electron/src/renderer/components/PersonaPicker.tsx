@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Persona } from '../../shared/types';
+import { useFocusTrap } from '../lib/focusTrap';
 
 interface Props {
   personas: Persona[];
@@ -101,6 +102,8 @@ export function PersonaPicker({ personas, currentId, onSelect, onClose }: Props)
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string>('All');
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(panelRef, { onClose });
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -135,7 +138,7 @@ export function PersonaPicker({ personas, currentId, onSelect, onClose }: Props)
 
   return (
     <div className="persona-picker-backdrop" onClick={onClose}>
-      <div className="persona-picker" role="dialog" aria-label="Select persona" onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className="persona-picker" role="dialog" aria-modal="true" aria-label="Select persona" onClick={(e) => e.stopPropagation()}>
         <div className="persona-picker-header">
           <input
             ref={searchRef}
