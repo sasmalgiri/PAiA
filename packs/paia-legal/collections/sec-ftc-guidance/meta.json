@@ -1,0 +1,5 @@
+{
+  "name": "SEC + FTC Guidance (PAiA Legal)",
+  "description": "SEC disclosure rules, FTC guidance, antitrust enforcement statements, recent rulemakings. Bind to Corporate Lawyer + M&A Counsel personas.",
+  "embedModel": "nomic-embed-text"
+}

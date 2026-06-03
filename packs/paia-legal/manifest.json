@@ -1,0 +1,11 @@
+{
+  "id": "paia-legal",
+  "name": "PAiA Legal",
+  "version": "0.1.0",
+  "description": "Vertical pack for legal practice: 8 specialist personas (patent, corporate, privacy, compliance, litigation, M&A, IP licensing, employment) bound to 4 jurisdictional knowledge stacks. Includes attorney-client privilege banner and conservative privacy defaults.",
+  "author": { "name": "PAiA", "url": "https://paia.app" },
+  "kind": "vertical",
+  "requiresTier": "legal",
+  "paiaMinVersion": "2.0.0",
+  "ollamaModels": ["nomic-embed-text"]
+}

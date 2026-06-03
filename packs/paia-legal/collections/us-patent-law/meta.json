@@ -1,0 +1,5 @@
+{
+  "name": "US Patent Law (PAiA Legal)",
+  "description": "USPTO MPEP excerpts, key 35 USC sections, AIA amendments, and recent CAFC opinions. Bind to the Patent Attorney persona.",
+  "embedModel": "nomic-embed-text"
+}

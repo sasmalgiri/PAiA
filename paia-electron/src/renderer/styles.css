@@ -2309,6 +2309,25 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
 }
 .pack-progress-stage { font-size: 12px; font-weight: 600; text-transform: capitalize; }
 
+/* ── Pack banner (vertical pack privacy/legal posture) ──── */
+.pack-banner {
+  display: flex;
+  gap: 10px;
+  margin: 4px 8px 6px;
+  padding: 8px 10px;
+  background: var(--bg-2);
+  border-left: 3px solid var(--accent, #5b9dd9);
+  border-radius: 4px;
+  font-size: 11px;
+}
+.pack-banner-icon { font-size: 14px; line-height: 1.4; }
+.pack-banner-text { flex: 1; min-width: 0; }
+.pack-banner-title { font-weight: 600; margin-bottom: 2px; }
+.pack-banner-body { color: var(--muted); line-height: 1.4; }
+@media (forced-colors: active) {
+  .pack-banner { border-left-color: Highlight; }
+}
+
 .activity-bar {
   height: 2px;
   width: 100%;

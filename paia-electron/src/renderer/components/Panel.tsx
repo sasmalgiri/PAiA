@@ -20,6 +20,7 @@ import { Sidebar } from './Sidebar';
 import { TrialPill } from './TrialPill';
 import { ActivityBar } from './ActivityBar';
 import { PersonaPicker } from './PersonaPicker';
+import { PackBanner } from './PackBanner';
 import { ShortcutHelp } from './ShortcutHelp';
 import { CloudModelConsentModal } from './CloudModelConsentModal';
 
@@ -454,6 +455,7 @@ export function Panel(props: PanelProps) {
         )}
 
         <div className="conversation">
+          <PackBanner persona={personas.find((p) => p.id === settings.personaId)} />
           {notice && (
             <div className={`panel-notice panel-notice-${notice.level}`} role="status" aria-live="polite">
               <span>{notice.text}</span>

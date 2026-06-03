@@ -85,7 +85,17 @@ const CATEGORY_MAP: Record<string, string> = {
 
 const CATEGORY_ORDER = ['All', 'General', 'Engineering', 'Science', 'Medical', 'Legal', 'Business', 'Creative', 'Education', 'Ops', 'Custom'];
 
+// Maps pack ID → category slot in the picker so pack-installed personas
+// sit next to the built-ins of the same domain rather than getting dumped
+// into "Custom". Add an entry when shipping a new vertical pack.
+const PACK_CATEGORY: Record<string, string> = {
+  'paia-legal': 'Legal',
+  'paia-eng': 'Engineering',
+  'paia-medical': 'Medical',
+};
+
 function categoryOf(p: Persona): string {
+  if (p.packId && PACK_CATEGORY[p.packId]) return PACK_CATEGORY[p.packId];
   if (!p.isBuiltin) return 'Custom';
   return CATEGORY_MAP[p.id] ?? 'General';
 }
@@ -181,6 +191,11 @@ export function PersonaPicker({ personas, currentId, onSelect, onClose }: Props)
                   <span className="persona-card-emoji">{p.emoji}</span>
                   <span className="persona-card-name">{p.name}</span>
                   {p.isBuiltin && <span className="persona-card-badge">built-in</span>}
+                  {p.packId && (
+                    <span className="persona-card-badge" title={`Installed via ${p.packId}`}>
+                      📦 {p.packId}
+                    </span>
+                  )}
                   {(p.ragCollectionIds?.length ?? 0) > 0 && (
                     <span
                       className="persona-card-badge"

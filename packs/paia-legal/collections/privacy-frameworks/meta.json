@@ -1,0 +1,5 @@
+{
+  "name": "Privacy Frameworks (PAiA Legal)",
+  "description": "GDPR + CCPA/CPRA + DPDP key articles, EDPB guidelines, ICO guidance. Bind to the Privacy Lawyer persona.",
+  "embedModel": "nomic-embed-text"
+}

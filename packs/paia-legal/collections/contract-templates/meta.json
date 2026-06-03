@@ -1,0 +1,5 @@
+{
+  "name": "Contract Templates (PAiA Legal)",
+  "description": "Common commercial, employment, licensing, and NDA templates with annotations. Bind to Corporate Lawyer + IP Licensing + Employment Lawyer personas.",
+  "embedModel": "nomic-embed-text"
+}
