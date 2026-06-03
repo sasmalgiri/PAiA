@@ -178,6 +178,14 @@ export function PersonaPicker({ personas, currentId, onSelect, onClose }: Props)
                   <span className="persona-card-emoji">{p.emoji}</span>
                   <span className="persona-card-name">{p.name}</span>
                   {p.isBuiltin && <span className="persona-card-badge">built-in</span>}
+                  {(p.ragCollectionIds?.length ?? 0) > 0 && (
+                    <span
+                      className="persona-card-badge"
+                      title={`Auto-queries ${p.ragCollectionIds!.length} knowledge stack${p.ragCollectionIds!.length === 1 ? '' : 's'}`}
+                    >
+                      📚 {p.ragCollectionIds!.length}
+                    </span>
+                  )}
                   {active && <span className="persona-card-check">✓</span>}
                 </div>
                 <div className="persona-card-preview">{preview(p.systemPrompt)}</div>

@@ -79,6 +79,10 @@ const DEFAULTS: Settings = {
   notificationsEnabled: true,
 
   trialExpiryAcknowledged: false,
+
+  autoRoutePersona: 'off',
+  routerPoolSize: 4,
+  routerIntroAcknowledged: false,
 };
 
 let cache: Settings | null = null;

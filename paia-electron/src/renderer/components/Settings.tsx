@@ -228,7 +228,7 @@ export function SettingsView({ settings, personas, onSave, onBack, onPersonasCha
         {tab === 'general' && <GeneralTab settings={settings} onSave={onSave} />}
         {tab === 'models' && <ModelsTab settings={settings} onSave={onSave} />}
         {tab === 'personas' && (
-          <PersonasTab personas={personas} onChanged={onPersonasChanged} />
+          <PersonasTab personas={personas} onChanged={onPersonasChanged} settings={settings} onSave={onSave} />
         )}
         {tab === 'knowledge' && <KnowledgeTab />}
         {tab === 'tools' && <ToolsTab />}
@@ -596,23 +596,97 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
 
 // ─── Personas ────────────────────────────────────────────────────
 
-function PersonasTab({ personas, onChanged }: { personas: Persona[]; onChanged: () => void | Promise<void> }) {
+// Platform-aware reminder for OLLAMA_NUM_PARALLEL. The env var lives on
+// Ollama's side and there's no API to query it, so we just show the
+// right setup snippet once.
+function OllamaParallelTip({ routerPoolSize }: { routerPoolSize: number }) {
+  const platform =
+    typeof navigator !== 'undefined' && /Win/.test(navigator.platform) ? 'win'
+    : typeof navigator !== 'undefined' && /Mac/.test(navigator.platform) ? 'mac'
+    : 'linux';
+  const cmd =
+    platform === 'win' ? `setx OLLAMA_NUM_PARALLEL ${routerPoolSize}\n# then restart Ollama (system tray → Quit → relaunch)`
+    : platform === 'mac' ? `launchctl setenv OLLAMA_NUM_PARALLEL ${routerPoolSize}\n# then restart the Ollama app from the menu bar`
+    : `export OLLAMA_NUM_PARALLEL=${routerPoolSize}\n# add to ~/.bashrc / ~/.zshrc and restart \`ollama serve\``;
+  return (
+    <details style={{ marginBottom: 8, fontSize: 11 }}>
+      <summary className="muted-note" style={{ cursor: 'pointer' }}>
+        💡 For parallel speed: set <code>OLLAMA_NUM_PARALLEL={routerPoolSize}</code> on Ollama
+      </summary>
+      <div style={{ padding: '6px 8px', marginTop: 4, background: 'var(--bg-1, rgba(0,0,0,0.05))', borderRadius: 4 }}>
+        <div className="muted-note" style={{ marginBottom: 6 }}>
+          Without this, Ollama serves one request at a time and council / longread runs queue serially.
+        </div>
+        <pre style={{ margin: 0, padding: 6, background: 'var(--bg-2)', borderRadius: 4, fontFamily: 'monospace', fontSize: 11, whiteSpace: 'pre-wrap' }}>{cmd}</pre>
+        <div className="muted-note" style={{ marginTop: 6 }}>
+          Each parallel slot adds ~2–3 GB RAM for a 3B model. Pick the largest your machine can spare.
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function PersonasTab({ personas, onChanged, settings, onSave }: {
+  personas: Persona[];
+  onChanged: () => void | Promise<void>;
+  settings: Settings;
+  onSave: (p: Partial<Settings>) => Promise<void>;
+}) {
+  // Router admin state
+  const [rebuilding, setRebuilding] = useState(false);
+  const [rebuildResult, setRebuildResult] = useState<{ embedded: number; reused: number; failed: number } | null>(null);
+  const [recentDecisions, setRecentDecisions] = useState<Array<{ ts: number; query: string; picks: string[]; reason: string; mode: string }>>([]);
+  const [showDecisions, setShowDecisions] = useState(false);
+
+  async function rebuildIndex() {
+    setRebuilding(true);
+    try {
+      const r = await api.personaRouterRefresh();
+      setRebuildResult(r);
+    } catch (e) {
+      setRebuildResult({ embedded: 0, reused: 0, failed: -1 });
+    } finally {
+      setRebuilding(false);
+    }
+  }
+
+  async function loadDecisions() {
+    try {
+      setRecentDecisions(await api.personaRouterRecent(20));
+    } catch {
+      setRecentDecisions([]);
+    }
+  }
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('🤖');
   const [prompt, setPrompt] = useState('');
-
+  const [newBinds, setNewBinds] = useState<string[]>([]);
   const [createErr, setCreateErr] = useState('');
+
+  const [collections, setCollections] = useState<KnowledgeCollection[]>([]);
+  const [editingBindsFor, setEditingBindsFor] = useState<string | null>(null);
+  const [bindErr, setBindErr] = useState<string>('');
+
+  useEffect(() => {
+    void api.listCollections().then(setCollections).catch(() => setCollections([]));
+  }, []);
+
   async function create() {
     if (!name.trim() || !prompt.trim()) return;
     try {
-      await api.createPersona({ name: name.trim(), emoji, systemPrompt: prompt.trim() });
+      await api.createPersona({
+        name: name.trim(),
+        emoji,
+        systemPrompt: prompt.trim(),
+        ragCollectionIds: newBinds.length > 0 ? newBinds : undefined,
+      });
       setName('');
       setEmoji('🤖');
       setPrompt('');
+      setNewBinds([]);
       setCreateErr('');
       await onChanged();
     } catch (e) {
-      // Keep the form populated so the user can retry without re-typing.
       setCreateErr(e instanceof Error ? e.message : String(e));
     }
   }
@@ -623,21 +697,162 @@ function PersonasTab({ personas, onChanged }: { personas: Persona[]; onChanged: 
     await onChanged();
   }
 
+  async function toggleBinding(personaId: string, collectionId: string) {
+    const p = personas.find((x) => x.id === personaId);
+    if (!p) return;
+    const current = new Set(p.ragCollectionIds ?? []);
+    if (current.has(collectionId)) current.delete(collectionId);
+    else current.add(collectionId);
+    const next = Array.from(current);
+    try {
+      setBindErr('');
+      await api.updatePersona(personaId, { ragCollectionIds: next.length > 0 ? next : undefined });
+      await onChanged();
+    } catch (e) {
+      setBindErr(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   return (
     <div className="settings-form">
-      <div className="persona-list">
-        {personas.map((p) => (
-          <div key={p.id} className="persona-row">
-            <div className="persona-emoji">{p.emoji}</div>
-            <div className="persona-info">
-              <div className="persona-name">{p.name}{p.isBuiltin && <span className="badge">built-in</span>}</div>
-              <div className="persona-prompt">{p.systemPrompt}</div>
-            </div>
-            {!p.isBuiltin && (
-              <button type="button" className="danger small" onClick={() => void remove(p.id)}>Delete</button>
+      {/* ── Smart Router (MoE) ───────────────────────────────────── */}
+      <div className="field" style={{ background: 'var(--surface-2, rgba(0,0,0,0.04))', padding: 12, borderRadius: 8, marginBottom: 14 }}>
+        <span style={{ fontWeight: 600 }}>Smart router (mixture of experts)</span>
+        <div className="muted-note" style={{ marginBottom: 8 }}>
+          When on, PAiA picks the best persona(s) for each message from the {personas.length}-strong pool. Two-stage routing: semantic pre-filter via embeddings, then a small LLM rerank picks the final {settings.routerPoolSize} or fewer.
+        </div>
+        {settings.autoRoutePersona !== 'off' && (
+          <OllamaParallelTip routerPoolSize={settings.routerPoolSize} />
+        )}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span style={{ minWidth: 120 }}>Mode</span>
+          <select
+            value={settings.autoRoutePersona}
+            onChange={(e) => void onSave({ autoRoutePersona: e.target.value as 'off' | 'single' | 'council' })}
+          >
+            <option value="off">Off — I pick the persona myself</option>
+            <option value="single">Single — router picks 1, swaps the active persona</option>
+            <option value="council">Council — router picks 2–{settings.routerPoolSize} for parallel consultation (council mode runs as single until slice 3 lands)</option>
+          </select>
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <span style={{ minWidth: 120 }}>Max experts</span>
+          <input
+            type="number"
+            min={1}
+            max={6}
+            value={settings.routerPoolSize}
+            onChange={(e) => void onSave({ routerPoolSize: Math.max(1, Math.min(6, Number(e.target.value) || 4)) })}
+            style={{ width: 70 }}
+          />
+          <span className="muted-note" style={{ fontSize: 11 }}>Caps the council size and the reranker's top-N.</span>
+        </label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+          <button type="button" className="small" disabled={rebuilding} onClick={() => void rebuildIndex()}>
+            {rebuilding ? 'Rebuilding…' : 'Rebuild router index'}
+          </button>
+          {rebuildResult && (
+            <span className="muted-note" style={{ fontSize: 11 }}>
+              {rebuildResult.failed === -1
+                ? 'Rebuild failed — check the router log.'
+                : `Embedded ${rebuildResult.embedded}, reused ${rebuildResult.reused}${rebuildResult.failed > 0 ? `, failed ${rebuildResult.failed}` : ''}.`}
+            </span>
+          )}
+          <button
+            type="button"
+            className="small"
+            onClick={() => {
+              const next = !showDecisions;
+              setShowDecisions(next);
+              if (next) void loadDecisions();
+            }}
+          >
+            {showDecisions ? 'Hide recent decisions' : 'Show recent decisions'}
+          </button>
+        </div>
+        {showDecisions && (
+          <div style={{ marginTop: 10, maxHeight: 220, overflowY: 'auto', background: 'var(--bg-1, rgba(0,0,0,0.05))', padding: 8, borderRadius: 6, fontSize: 11, fontFamily: 'monospace' }}>
+            {recentDecisions.length === 0 ? (
+              <div className="muted-note">No decisions yet. Send a message with auto-route on.</div>
+            ) : (
+              recentDecisions.slice().reverse().map((d, i) => (
+                <div key={i} style={{ padding: '4px 0', borderBottom: '1px solid var(--border, rgba(255,255,255,0.08))' }}>
+                  <div style={{ color: 'var(--muted)' }}>
+                    {new Date(d.ts).toLocaleTimeString()} · {d.mode}
+                  </div>
+                  <div>"{d.query.length > 80 ? d.query.slice(0, 77) + '…' : d.query}" → {d.picks.join(', ')}</div>
+                  {d.reason && <div style={{ color: 'var(--muted)', fontStyle: 'italic' }}>{d.reason}</div>}
+                </div>
+              ))
             )}
           </div>
-        ))}
+        )}
+      </div>
+
+      <div className="persona-list">
+        {personas.map((p) => {
+          const bound = p.ragCollectionIds ?? [];
+          const isEditing = editingBindsFor === p.id;
+          return (
+            <div key={p.id} className="persona-row" style={{ flexWrap: 'wrap' }}>
+              <div className="persona-emoji">{p.emoji}</div>
+              <div className="persona-info">
+                <div className="persona-name">
+                  {p.name}
+                  {p.isBuiltin && <span className="badge">built-in</span>}
+                  {bound.length > 0 && (
+                    <span className="badge" title={bound.map((id) => collections.find((c) => c.id === id)?.name ?? '(deleted stack)').join(', ')}>
+                      📚 {bound.length} stack{bound.length === 1 ? '' : 's'}
+                    </span>
+                  )}
+                </div>
+                <div className="persona-prompt">{p.systemPrompt}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  type="button"
+                  className="small"
+                  onClick={() => setEditingBindsFor(isEditing ? null : p.id)}
+                  aria-expanded={isEditing}
+                  title="Bind knowledge stacks to this persona"
+                >
+                  {isEditing ? 'Done' : (bound.length > 0 ? 'Edit knowledge…' : 'Bind knowledge…')}
+                </button>
+                {!p.isBuiltin && (
+                  <button type="button" className="danger small" onClick={() => void remove(p.id)}>Delete</button>
+                )}
+              </div>
+              {isEditing && (
+                <div style={{ flexBasis: '100%', marginTop: 8, padding: '8px 10px', background: 'var(--surface-2, rgba(0,0,0,0.04))', borderRadius: 6 }}>
+                  {collections.length === 0 ? (
+                    <div className="muted-note">No knowledge stacks yet. Create one in Settings → Knowledge first.</div>
+                  ) : (
+                    <>
+                      <div className="muted-note" style={{ marginBottom: 6 }}>
+                        When this persona is active, these stacks are auto-queried alongside any the user attached to the thread.
+                      </div>
+                      {collections.map((c) => {
+                        const checked = bound.includes(c.id);
+                        return (
+                          <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => void toggleBinding(p.id, c.id)}
+                            />
+                            <span>{c.name}</span>
+                            {c.description && <span className="muted-note" style={{ fontSize: 11 }}>— {c.description}</span>}
+                          </label>
+                        );
+                      })}
+                      {bindErr && <div className="muted-note" style={{ color: 'var(--danger, #d66)', marginTop: 6 }}>{bindErr}</div>}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="field">
@@ -650,6 +865,32 @@ function PersonasTab({ personas, onChanged }: { personas: Persona[]; onChanged: 
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
         />
+        {collections.length > 0 && (
+          <details style={{ marginTop: 4 }}>
+            <summary className="muted-note" style={{ cursor: 'pointer' }}>
+              Bind knowledge stacks{newBinds.length > 0 ? ` (${newBinds.length} selected)` : ''}
+            </summary>
+            <div style={{ padding: '6px 4px 0' }}>
+              {collections.map((c) => {
+                const checked = newBinds.includes(c.id);
+                return (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        setNewBinds((prev) =>
+                          e.target.checked ? [...prev, c.id] : prev.filter((id) => id !== c.id),
+                        );
+                      }}
+                    />
+                    <span>{c.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </details>
+        )}
         <button
           type="button"
           className="primary"

@@ -39,6 +39,8 @@ interface PanelProps {
   onModelChange: (model: string, extra?: { allowCloudModels?: boolean }) => void;
   onStartAgent: (goal: string) => void;
   onStartResearch: (question: string) => void;
+  onStartCouncil: (question: string) => void;
+  onStartLongread: (question: string) => void;
   onOpenCanvas: () => void;
   onRegenerateLast?: () => void;
   onForkFromMessage?: (messageId: string) => void;
@@ -49,7 +51,7 @@ export function Panel(props: PanelProps) {
     settings, personas, threads, currentThread, messages,
     onClose, onOpenSettings, onOpenThread, onNewThread, onDeleteThread,
     onSend, onPersonaChange, onModelChange,
-    onStartAgent, onStartResearch, onOpenCanvas,
+    onStartAgent, onStartResearch, onStartCouncil, onStartLongread, onOpenCanvas,
     onRegenerateLast, onForkFromMessage,
   } = props;
 
@@ -169,6 +171,18 @@ export function Panel(props: PanelProps) {
       const q = rest.trim();
       if (!q) { showNotice('warn', 'Ask a research question — e.g. /research why did GPT-4 fine-tuning get cheaper'); return; }
       onStartResearch(q);
+      return;
+    }
+    if (name === 'council' || name === 'experts') {
+      const q = rest.trim();
+      if (!q) { showNotice('warn', 'Ask the council a question — e.g. /council should I take this job offer with relocation'); return; }
+      onStartCouncil(q);
+      return;
+    }
+    if (name === 'longread' || name === 'mapreduce') {
+      const q = rest.trim();
+      if (!q) { showNotice('warn', 'Ask a question about the attached document — e.g. /longread what are the main risks?'); return; }
+      onStartLongread(q);
       return;
     }
     if (name === 'canvas') {

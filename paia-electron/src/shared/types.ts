@@ -67,7 +67,7 @@ export interface DbThread {
 export interface DbAttachment {
   id: string;
   messageId: string;
-  kind: 'image' | 'text' | 'pdf' | 'screen';
+  kind: 'image' | 'text' | 'pdf' | 'screen' | 'council-payload' | 'map-reduce-payload';
   filename: string;
   mimeType: string;
   sizeBytes: number;
@@ -84,6 +84,12 @@ export interface Persona {
   emoji: string;
   systemPrompt: string;
   isBuiltin: boolean;
+  /**
+   * Knowledge stacks bound to this persona. When this persona is active
+   * on a thread, these collections are auto-queried alongside any the
+   * user attached to the thread manually. Union, de-duplicated.
+   */
+  ragCollectionIds?: string[];
 }
 
 // ─── settings ──────────────────────────────────────────────────────
@@ -243,6 +249,20 @@ export interface Settings {
 
   // one-time modals (bitfield of shown flags so we don't nag)
   trialExpiryAcknowledged: boolean;
+
+  // ─── persona router (MoE) ────────────────────────────────────────
+  /**
+   * Auto-routes incoming user messages to the most relevant persona(s).
+   *   off     — current behaviour, user picks persona manually
+   *   single  — router picks 1 persona, switches the thread to it
+   *   council — router picks N personas, runs a parallel consultation
+   *             (see council module — slice 3)
+   */
+  autoRoutePersona: 'off' | 'single' | 'council';
+  /** Max experts in a council run (also caps single-mode reranker output). */
+  routerPoolSize: number;
+  /** One-time explainer modal for first-time router users. */
+  routerIntroAcknowledged: boolean;
 }
 
 // ─── screen capture / OCR ──────────────────────────────────────────

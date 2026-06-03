@@ -38,6 +38,8 @@ import { ShortcutHelp } from './components/ShortcutHelp';
 import { friendlyError, type FriendlyError } from './lib/errors';
 import { UpgradePrompt, detectUpgradeError, type UpgradeInfo } from './components/UpgradePrompt';
 import { TrialExpiredModal } from './components/TrialExpiredModal';
+import { CouncilPanel, type CouncilState } from './components/CouncilPanel';
+import { MapReducePanel, type MapReduceState } from './components/MapReducePanel';
 import { InputModal } from './components/InputModal';
 import { setLocale } from './lib/i18n';
 
@@ -70,6 +72,17 @@ export function App() {
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeInfo | null>(null);
   const [showTrialExpired, setShowTrialExpired] = useState(false);
   const [goalPrompt, setGoalPrompt] = useState<GoalKind | null>(null);
+  // Last persona-routing decision, surfaced as a chip above the response.
+  // Lets the user see why the active persona changed and override.
+  const [lastRouteDecision, setLastRouteDecision] = useState<{
+    personaIds: string[];
+    reason: string;
+    mode: 'embedding-only' | 'embedding+llm' | 'no-personas';
+  } | null>(null);
+  // Active council-of-experts run.
+  const [councilState, setCouncilState] = useState<CouncilState | null>(null);
+  // Active long-read (map-reduce) run.
+  const [mapReduceState, setMapReduceState] = useState<MapReduceState | null>(null);
   // Undo-toast for thread soft-delete. Holds the id + name of the
   // just-deleted thread; a timer clears it after 7 seconds.
   const [undoState, setUndoState] = useState<{ id: string; title: string } | null>(null);
@@ -97,6 +110,106 @@ export function App() {
   useEffect(() => {
     const off = api.onAgentRun((run) => {
       setAgentRun((prev) => (prev && prev.id === run.id ? run : prev));
+    });
+    return off;
+  }, []);
+
+  // Long-read (map-reduce) event stream.
+  useEffect(() => {
+    const off = api.onMapReduceEvent((ev) => {
+      setMapReduceState((prev) => {
+        if (!prev) return prev;
+        if (prev.runId !== null && ev.runId !== prev.runId) return prev;
+        switch (ev.kind) {
+          case 'started':
+            return {
+              ...prev,
+              runId: ev.runId,
+              totalChunks: ev.totalChunks ?? 0,
+              status: 'mapping',
+            };
+          case 'chunk-progress':
+            return {
+              ...prev,
+              chunksDone: ev.k ?? prev.chunksDone,
+              chunksWithContent: prev.chunksWithContent + (ev.hasContent ? 1 : 0),
+            };
+          case 'reduce-started':
+            return {
+              ...prev,
+              usableChunks: ev.usableChunks ?? prev.chunksWithContent,
+              status: 'reducing',
+            };
+          case 'reduce-token':
+            return { ...prev, answer: prev.answer + (ev.token ?? '') };
+          case 'finished':
+            return {
+              ...prev,
+              answer: ev.answer ?? prev.answer,
+              usableChunks: ev.sourceChunkCount ?? prev.usableChunks,
+              status: 'done',
+            };
+          case 'error':
+            return { ...prev, status: 'error', error: ev.error };
+          default:
+            return prev;
+        }
+      });
+    });
+    return off;
+  }, []);
+
+  // Council-of-experts event stream. Maintains the modal's state as
+  // each expert reports and the synthesis streams.
+  useEffect(() => {
+    const off = api.onCouncilEvent((ev) => {
+      setCouncilState((prev) => {
+        if (!prev) return prev;
+        if (prev.runId !== null && ev.runId !== prev.runId) return prev;
+        switch (ev.kind) {
+          case 'started':
+            return {
+              ...prev,
+              runId: ev.runId,
+              personaIds: ev.personaIds ?? prev.personaIds,
+              status: 'experts-running',
+            };
+          case 'expert-done':
+            return {
+              ...prev,
+              expertAnswers: [
+                ...prev.expertAnswers.filter((a) => a.personaId !== ev.personaId),
+                {
+                  personaId: ev.personaId!,
+                  personaName: ev.personaName ?? ev.personaId!,
+                  emoji: ev.emoji ?? '🤖',
+                  content: ev.content ?? '',
+                  durationMs: ev.durationMs ?? 0,
+                  error: ev.error,
+                },
+              ],
+            };
+          case 'experts-all-done':
+            return {
+              ...prev,
+              expertAnswers: ev.expertAnswers ?? prev.expertAnswers,
+              status: 'synthesising',
+            };
+          case 'synthesis-token':
+            return { ...prev, synthesis: prev.synthesis + (ev.token ?? '') };
+          case 'finished':
+            return {
+              ...prev,
+              synthesis: ev.synthesis ?? prev.synthesis,
+              expertAnswers: ev.expertAnswers ?? prev.expertAnswers,
+              status: 'done',
+            };
+          case 'error':
+            return { ...prev, status: 'error', error: ev.error };
+          default:
+            return prev;
+        }
+      });
     });
     return off;
   }, []);
@@ -197,6 +310,137 @@ export function App() {
       const upg = detectUpgradeError(err);
       if (upg) setUpgradeInfo(upg);
       else alert(err instanceof Error ? err.message : String(err));
+    }
+  }, [settings, currentThread]);
+
+  // ── Long-read (map-reduce) ──────────────────────────────────
+  // Looks back through the current thread for the most recent
+  // text/PDF attachment and runs map-reduce on it.
+  const startMapReduce = useCallback(async (question: string) => {
+    if (!settings) return;
+    if (!question.trim()) return;
+    const thread = currentThread;
+    if (!thread) {
+      setChatError({ title: 'Open a thread first', hint: 'Attach a long doc to a thread, then ask /longread <question>.' });
+      return;
+    }
+    const model = thread.model ?? settings.model;
+    if (!model) {
+      setChatError({ title: 'No model selected', hint: 'Pick a model in Settings → Models before /longread.' });
+      return;
+    }
+
+    // Find the most recent text/PDF attachment in this thread.
+    const recent = await api.listMessages(thread.id);
+    let docText: string | null = null;
+    let docLabel = '';
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const msg = recent[i];
+      const att = msg.attachments.find((a) => a.kind === 'text' || a.kind === 'pdf');
+      if (att && att.content && att.content.length > 0) {
+        docText = att.content;
+        docLabel = att.filename || (att.kind === 'pdf' ? 'PDF' : 'document');
+        break;
+      }
+    }
+    if (!docText) {
+      setChatError({
+        title: 'No long document in this thread',
+        hint: 'Attach a PDF or text file first, then /longread <question>.',
+      });
+      return;
+    }
+
+    setMapReduceState({
+      runId: null,
+      question,
+      documentLabel: docLabel,
+      totalChunks: 0,
+      chunksDone: 0,
+      chunksWithContent: 0,
+      usableChunks: 0,
+      answer: '',
+      status: 'pending',
+    });
+    try {
+      await api.mapReduceStart({
+        threadId: thread.id,
+        question,
+        documentText: docText,
+        documentLabel: docLabel,
+        model,
+        parallelism: settings.routerPoolSize, // reuse the same knob
+        personaId: thread.personaId ?? undefined,
+      });
+    } catch (err) {
+      setMapReduceState((prev) => prev ? { ...prev, status: 'error', error: err instanceof Error ? err.message : String(err) } : prev);
+    }
+  }, [settings, currentThread]);
+
+  // ── Council ─────────────────────────────────────────────────
+  // Kick off a council-of-experts run. Persona IDs are optional; if
+  // omitted, the router is asked to pick `routerPoolSize` from the pool.
+  const startCouncil = useCallback(async (question: string, picks?: string[]) => {
+    if (!settings) return;
+    if (!question.trim()) return;
+    let thread = currentThread;
+    if (!thread) {
+      thread = await api.createThread({
+        title: `Council: ${question.slice(0, 50)}`,
+        personaId: settings.personaId,
+        model: settings.model || null,
+      });
+      setCurrentThread(thread);
+      setThreads(await api.listThreads());
+    }
+    const model = thread.model ?? settings.model;
+    if (!model) {
+      setChatError({ title: 'No model selected', hint: 'Pick a model in Settings → Models before starting a council.' });
+      return;
+    }
+
+    let personaIds = picks;
+    if (!personaIds || personaIds.length === 0) {
+      try {
+        const decision = await api.personaRoute({
+          query: question,
+          poolSize: settings.routerPoolSize,
+        });
+        personaIds = decision.personaIds;
+        setLastRouteDecision({
+          personaIds: decision.personaIds,
+          reason: decision.reason,
+          mode: decision.mode,
+        });
+      } catch (err) {
+        // Routing failed — fall back to the active persona only (degenerate council of 1).
+        personaIds = [settings.personaId];
+      }
+    }
+    if (personaIds.length === 0) {
+      setChatError({ title: 'No personas to consult', hint: 'The router returned an empty pick list.' });
+      return;
+    }
+
+    // Open the modal immediately in pending state. The IPC event stream
+    // updates it as the run progresses.
+    setCouncilState({
+      runId: null,
+      question,
+      personaIds,
+      expertAnswers: [],
+      synthesis: '',
+      status: 'pending',
+    });
+    try {
+      await api.councilStart({
+        threadId: thread.id,
+        question,
+        personaIds,
+        model,
+      });
+    } catch (err) {
+      setCouncilState((prev) => prev ? { ...prev, status: 'error', error: err instanceof Error ? err.message : String(err) } : prev);
     }
   }, [settings, currentThread]);
 
@@ -316,6 +560,7 @@ export function App() {
     void (async () => {
       const status = await api.licenseStatus();
       if (status.source === 'free' && status.trialDaysLeft === 0) {
+        await switchView('panel');
         setShowTrialExpired(true);
       }
     })();
@@ -445,7 +690,54 @@ export function App() {
         await refreshThreads();
       }
 
-      const persona = personas.find((p) => p.id === settings.personaId) ?? personas[0];
+      // Auto-route: if enabled, ask the router which persona(s) fit best
+      // and either swap the active persona (single mode) or fire a
+      // council run (council mode).
+      let effectivePersonaId: string = settings.personaId;
+      if (settings.autoRoutePersona !== 'off' && text.trim().length > 0) {
+        try {
+          const decision = await api.personaRoute({
+            query: text,
+            poolSize: settings.routerPoolSize,
+          });
+          if (decision.personaIds.length > 0) {
+            setLastRouteDecision({
+              personaIds: decision.personaIds,
+              reason: decision.reason,
+              mode: decision.mode,
+            });
+
+            // Council mode + at least 2 valid picks → fire a council
+            // run and skip the normal single-chat path entirely.
+            if (settings.autoRoutePersona === 'council' && decision.personaIds.length >= 2) {
+              // Release the send guard before delegating, since the
+              // council pipeline runs independently and the user may
+              // want to keep typing.
+              sendingRef.current = false;
+              await startCouncil(text, decision.personaIds);
+              return;
+            }
+
+            // Single mode (or council fallback when only 1 pick).
+            effectivePersonaId = decision.personaIds[0];
+            // Persist the routed persona to the thread so follow-up
+            // messages stay in the same lane unless re-routed.
+            if (effectivePersonaId !== thread.personaId) {
+              await api.updateThread(thread.id, { personaId: effectivePersonaId });
+              thread = { ...thread, personaId: effectivePersonaId };
+              setCurrentThread(thread);
+            }
+          }
+        } catch (err) {
+          // Routing is best-effort; never block the chat send on it.
+          // eslint-disable-next-line no-console
+          console.warn('persona route failed, falling back to current persona', err);
+        }
+      } else {
+        setLastRouteDecision(null);
+      }
+
+      const persona = personas.find((p) => p.id === effectivePersonaId) ?? personas[0];
       const systemPrompt = persona?.systemPrompt ?? 'You are a helpful assistant.';
       const model = thread.model ?? settings.model;
       if (!model) {
@@ -589,6 +881,8 @@ export function App() {
           onModelChange={(m, extra) => void persistSettings({ model: m, ...(extra ?? {}) })}
           onStartAgent={(goal) => void startAgent(goal)}
           onStartResearch={(q) => void startResearch(q)}
+          onStartCouncil={(q) => void startCouncil(q)}
+          onStartLongread={(q) => void startMapReduce(q)}
           onOpenCanvas={() => setCanvasOpen(true)}
           onRegenerateLast={() => void regenerateLast()}
           onForkFromMessage={(mid) => void forkFromMessage(mid)}
@@ -608,6 +902,28 @@ export function App() {
         <ResearchPanel
           run={researchRun}
           onClose={() => setResearchRun(null)}
+        />
+      )}
+
+      {councilState && (
+        <CouncilPanel
+          state={councilState}
+          onClose={() => setCouncilState(null)}
+          onAbort={() => {
+            if (councilState.runId) void api.councilAbort(councilState.runId);
+            setCouncilState((prev) => prev ? { ...prev, status: 'error', error: 'Aborted by user.' } : prev);
+          }}
+        />
+      )}
+
+      {mapReduceState && (
+        <MapReducePanel
+          state={mapReduceState}
+          onClose={() => setMapReduceState(null)}
+          onAbort={() => {
+            if (mapReduceState.runId) void api.mapReduceAbort(mapReduceState.runId);
+            setMapReduceState((prev) => prev ? { ...prev, status: 'error', error: 'Aborted by user.' } : prev);
+          }}
         />
       )}
 
@@ -757,6 +1073,37 @@ export function App() {
         </div>
       )}
 
+      {lastRouteDecision && lastRouteDecision.personaIds.length > 0 && view === 'panel' && (
+        <div className="route-chip" role="status" aria-live="polite">
+          <span className="route-chip-icon" aria-hidden>{lastRouteDecision.personaIds.length > 1 ? '🏛' : '🎯'}</span>
+          <span className="route-chip-text">
+            {(() => {
+              const picks = lastRouteDecision.personaIds
+                .map((id) => personas.find((p) => p.id === id))
+                .filter((p): p is Persona => !!p);
+              if (picks.length === 0) return 'Routed';
+              if (picks.length === 1) {
+                return <>Routed to <strong>{picks[0].emoji} {picks[0].name}</strong>{lastRouteDecision.mode === 'embedding-only' ? ' (semantic match)' : ''}</>;
+              }
+              return <>Council of {picks.length}: {picks.map((p, i) => (
+                <span key={p.id}>{i > 0 ? ' · ' : ''}{p.emoji} {p.name}</span>
+              ))}</>;
+            })()}
+          </span>
+          {lastRouteDecision.reason && (
+            <span className="route-chip-reason" title={lastRouteDecision.reason}>
+              — {lastRouteDecision.reason.length > 60 ? lastRouteDecision.reason.slice(0, 57) + '…' : lastRouteDecision.reason}
+            </span>
+          )}
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setLastRouteDecision(null)}
+            aria-label="Dismiss routing chip"
+            title="Dismiss"
+          >×</button>
+        </div>
+      )}
       <LearnedToast onOpenMemory={() => void switchView('settings')} />
       {shortcutHelpOpen && <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />}
       {chatError && (

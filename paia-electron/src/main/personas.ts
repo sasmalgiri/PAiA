@@ -217,7 +217,12 @@ export function getPersona(id: string): Persona | null {
   return listPersonas().find((p) => p.id === id) ?? null;
 }
 
-export function createPersona(name: string, emoji: string, systemPrompt: string): Persona {
+export function createPersona(
+  name: string,
+  emoji: string,
+  systemPrompt: string,
+  ragCollectionIds?: string[],
+): Persona {
   const list = loadCustom();
   const persona: Persona = {
     id: randomUUID(),
@@ -225,6 +230,7 @@ export function createPersona(name: string, emoji: string, systemPrompt: string)
     emoji,
     systemPrompt,
     isBuiltin: false,
+    ragCollectionIds: ragCollectionIds && ragCollectionIds.length > 0 ? ragCollectionIds : undefined,
   };
   list.push(persona);
   saveCustom(list);

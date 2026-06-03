@@ -118,6 +118,8 @@ function DetachedApp() {
       }}
       onStartAgent={() => { /* could wire later */ }}
       onStartResearch={() => { /* could wire later */ }}
+      onStartCouncil={() => { /* council lives in the main window */ }}
+      onStartLongread={() => { /* longread lives in the main window */ }}
       onOpenCanvas={() => { /* canvas lives in the main window */ }}
     />
   );

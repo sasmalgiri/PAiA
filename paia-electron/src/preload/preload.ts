@@ -113,11 +113,80 @@ const api = {
 
   // ── personas ─────────────────────────────────────────────
   listPersonas: (): Promise<Persona[]> => ipcRenderer.invoke('paia:list-personas'),
-  createPersona: (p: { name: string; emoji: string; systemPrompt: string }): Promise<Persona> =>
+  createPersona: (p: { name: string; emoji: string; systemPrompt: string; ragCollectionIds?: string[] }): Promise<Persona> =>
     ipcRenderer.invoke('paia:create-persona', p),
   updatePersona: (id: string, patch: Partial<Persona>): Promise<Persona | null> =>
     ipcRenderer.invoke('paia:update-persona', { id, patch }),
   deletePersona: (id: string): Promise<boolean> => ipcRenderer.invoke('paia:delete-persona', id),
+
+  // ── persona router (MoE) ─────────────────────────────────
+  personaRoute: (p: { query: string; poolSize?: number; model?: string }): Promise<{
+    personaIds: string[];
+    reason: string;
+    candidates: Array<{ id: string; name: string; emoji: string; score: number }>;
+    mode: 'embedding-only' | 'embedding+llm' | 'no-personas';
+  }> => ipcRenderer.invoke('paia:persona-route', p),
+  personaRouterRefresh: (): Promise<{ embedded: number; reused: number; failed: number }> =>
+    ipcRenderer.invoke('paia:persona-router-refresh'),
+  personaRouterRecent: (limit?: number): Promise<Array<{ ts: number; query: string; picks: string[]; reason: string; mode: string }>> =>
+    ipcRenderer.invoke('paia:persona-router-recent', limit),
+
+  // ── council (parallel experts) ───────────────────────────
+  councilStart: (p: { threadId: string; question: string; personaIds: string[]; model: string }): Promise<string> =>
+    ipcRenderer.invoke('paia:council-start', p),
+  councilAbort: (runId: string): Promise<boolean> =>
+    ipcRenderer.invoke('paia:council-abort', runId),
+  onCouncilEvent: (cb: (ev: {
+    runId: string;
+    threadId: string;
+    kind: 'started' | 'expert-done' | 'experts-all-done' | 'synthesis-token' | 'finished' | 'error';
+    personaIds?: string[];
+    personaId?: string;
+    personaName?: string;
+    emoji?: string;
+    content?: string;
+    token?: string;
+    durationMs?: number;
+    expertAnswers?: Array<{ personaId: string; personaName: string; emoji: string; content: string; durationMs: number; error?: string }>;
+    synthesis?: string;
+    error?: string;
+  }) => void): (() => void) => {
+    const handler = (_e: unknown, ev: Parameters<typeof cb>[0]): void => cb(ev);
+    ipcRenderer.on('paia:council-event', handler);
+    return (): void => { ipcRenderer.removeListener('paia:council-event', handler); };
+  },
+
+  // ── long-doc map-reduce ──────────────────────────────────
+  mapReduceStart: (p: {
+    threadId: string;
+    question: string;
+    documentText: string;
+    documentLabel: string;
+    model: string;
+    parallelism?: number;
+    personaId?: string;
+  }): Promise<string> => ipcRenderer.invoke('paia:map-reduce-start', p),
+  mapReduceAbort: (runId: string): Promise<boolean> =>
+    ipcRenderer.invoke('paia:map-reduce-abort', runId),
+  onMapReduceEvent: (cb: (ev: {
+    runId: string;
+    threadId: string;
+    kind: 'started' | 'chunk-progress' | 'reduce-started' | 'reduce-token' | 'finished' | 'error';
+    totalChunks?: number;
+    parallelism?: number;
+    k?: number;
+    n?: number;
+    hasContent?: boolean;
+    usableChunks?: number;
+    sourceChunkCount?: number;
+    token?: string;
+    answer?: string;
+    error?: string;
+  }) => void): (() => void) => {
+    const handler = (_e: unknown, ev: Parameters<typeof cb>[0]): void => cb(ev);
+    ipcRenderer.on('paia:map-reduce-event', handler);
+    return (): void => { ipcRenderer.removeListener('paia:map-reduce-event', handler); };
+  },
 
   // ── threads / messages ───────────────────────────────────
   listThreads: (): Promise<DbThread[]> => ipcRenderer.invoke('paia:list-threads'),

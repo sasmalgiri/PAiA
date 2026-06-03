@@ -30,6 +30,9 @@ import { logger } from './logger';
 import * as settingsStore from './settings';
 import * as db from './db';
 import * as personas from './personas';
+import * as personaRouter from './personaRouter';
+import * as council from './council';
+import * as mapReduce from './mapReduce';
 import * as screenSvc from './screen';
 import { captureRegion } from './region';
 import * as updater from './updater';
@@ -365,13 +368,62 @@ ipcMain.handle('paia:save-settings', (_e, patch: Partial<Settings>) => {
 // ─── personas IPC ──────────────────────────────────────────────────
 
 ipcMain.handle('paia:list-personas', () => personas.listPersonas());
-ipcMain.handle('paia:create-persona', (_e, p: { name: string; emoji: string; systemPrompt: string }) =>
-  personas.createPersona(p.name, p.emoji, p.systemPrompt),
+ipcMain.handle('paia:create-persona', (_e, p: { name: string; emoji: string; systemPrompt: string; ragCollectionIds?: string[] }) =>
+  personas.createPersona(p.name, p.emoji, p.systemPrompt, p.ragCollectionIds),
 );
 ipcMain.handle('paia:update-persona', (_e, p: { id: string; patch: Partial<Persona> }) =>
   personas.updatePersona(p.id, p.patch),
 );
 ipcMain.handle('paia:delete-persona', (_e, id: string) => personas.deletePersona(id));
+
+// ─── persona router IPC ───────────────────────────────────────────
+
+ipcMain.handle('paia:persona-route', (_e, p: { query: string; poolSize?: number; model?: string }) =>
+  personaRouter.route(p.query, { poolSize: p.poolSize, model: p.model }),
+);
+ipcMain.handle('paia:persona-router-refresh', () => personaRouter.refreshEmbeddings());
+ipcMain.handle('paia:persona-router-recent', (_e, limit?: number) => personaRouter.recentDecisions(limit));
+
+// ─── council IPC ─────────────────────────────────────────────────
+
+ipcMain.handle('paia:council-start', async (event, p: { threadId: string; question: string; personaIds: string[]; model: string }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) throw new Error('No window for council run');
+  return council.runCouncil({
+    threadId: p.threadId,
+    question: p.question,
+    personaIds: p.personaIds,
+    model: p.model,
+    win,
+  });
+});
+ipcMain.handle('paia:council-abort', (_e, runId: string) => council.abortCouncil(runId));
+
+// ─── long-doc map-reduce IPC ─────────────────────────────────────
+
+ipcMain.handle('paia:map-reduce-start', async (event, p: {
+  threadId: string;
+  question: string;
+  documentText: string;
+  documentLabel: string;
+  model: string;
+  parallelism?: number;
+  personaId?: string;
+}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) throw new Error('No window for map-reduce run');
+  return mapReduce.runMapReduce({
+    threadId: p.threadId,
+    question: p.question,
+    documentText: p.documentText,
+    documentLabel: p.documentLabel,
+    model: p.model,
+    parallelism: p.parallelism,
+    personaId: p.personaId,
+    win,
+  });
+});
+ipcMain.handle('paia:map-reduce-abort', (_e, runId: string) => mapReduce.abortMapReduce(runId));
 
 // ─── threads / messages IPC ────────────────────────────────────────
 
@@ -491,7 +543,17 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
   }
 
   try {
-    const collectionIds = db.listThreadCollections(threadId);
+    // Union of (a) collections the user manually attached to this thread
+    // and (b) collections bound to the active persona. De-duplicated so
+    // we don't double-count chunks if a stack is bound both ways.
+    const threadCollections = db.listThreadCollections(threadId);
+    const thread = db.getThread(threadId);
+    const personaBound: string[] = (() => {
+      if (!thread?.personaId) return [];
+      const p = personas.getPersona(thread.personaId);
+      return p?.ragCollectionIds ?? [];
+    })();
+    const collectionIds = Array.from(new Set([...threadCollections, ...personaBound]));
     if (collectionIds.length > 0) {
       const chunks = await rag.retrieve(collectionIds, redacted.redacted, 5);
       if (chunks.length > 0) {

@@ -103,6 +103,21 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     rewrite: () => null,
   },
   {
+    name: 'council',
+    description: 'Consult a council of expert personas in parallel: /council <question>',
+    rewrite: () => null,
+  },
+  {
+    name: 'experts',
+    description: 'Alias for /council — parallel expert consultation.',
+    rewrite: () => null,
+  },
+  {
+    name: 'longread',
+    description: 'Map-reduce over an attached long doc: /longread <question>',
+    rewrite: () => null,
+  },
+  {
     name: 'canvas',
     description: 'Open the Canvas (artifacts) side panel.',
     rewrite: () => null,
