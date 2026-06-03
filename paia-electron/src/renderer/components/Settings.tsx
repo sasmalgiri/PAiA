@@ -1716,6 +1716,25 @@ function PrivacyTab({ settings, onSave }: { settings: Settings; onSave: (p: Part
       </p>
 
       <div className="settings-section">
+        <div className="settings-section-title">Message inspector</div>
+        <label className="field row">
+          <span>Persist per-message diagnostic data</span>
+          <input
+            type="checkbox"
+            checked={settings.inspectorEnabled}
+            onChange={(e) => onSave({ inspectorEnabled: e.target.checked })}
+          />
+        </label>
+        <p className="muted-note">
+          Stores timing breakdown, RAG citations (filenames + scores), active-window
+          app name, and persona/model used per message — locally, never sent
+          anywhere. Lets the 🔍 Inspector under each reply explain why a response was
+          slow or what was cited. Turn off on shared machines or regulated environments;
+          prior message telemetry stays unless you delete those threads.
+        </p>
+      </div>
+
+      <div className="settings-section">
         <div className="settings-section-title">Crash reports</div>
         <label className="field row">
           <span>Enable crash reports</span>

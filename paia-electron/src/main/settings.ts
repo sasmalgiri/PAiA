@@ -89,6 +89,8 @@ const DEFAULTS: Settings = {
 
   tipsShown: [],
   tipsDisabled: false,
+
+  inspectorEnabled: true,
 };
 
 let cache: Settings | null = null;

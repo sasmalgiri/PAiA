@@ -277,6 +277,13 @@ export interface Settings {
   /** User opt-out: hide all tip cards going forward. */
   tipsDisabled: boolean;
 
+  // ─── observability inspector (E4) ────────────────────────────
+  /** When false, per-message telemetry is not persisted at all
+   *  (inspector pane won't appear on new messages). Existing telemetry
+   *  on prior messages stays — flip on later to re-enable.
+   *  Default true; flip off on shared machines or regulated envs. */
+  inspectorEnabled: boolean;
+
   /**
    * Auto-routes incoming user messages to the most relevant persona(s).
    *   off     — current behaviour, user picks persona manually

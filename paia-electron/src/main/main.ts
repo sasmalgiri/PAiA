@@ -713,16 +713,24 @@ ipcMain.handle('paia:chat-send', async (event, payload: ChatPayload) => {
         outputCharCount: text.length,
       },
     };
-    const telemetryJson = JSON.stringify(fullTelemetry);
-    db.addMessage(threadId, 'assistant', text, 0, [
-      {
-        kind: 'message-telemetry',
-        mimeType: 'application/json',
-        filename: 'telemetry.json',
-        sizeBytes: telemetryJson.length,
-        content: telemetryJson,
-      },
-    ]);
+    // Honour the inspector opt-out: shared machines or regulated envs
+    // can flip settingsStore.inspectorEnabled off and the telemetry
+    // attachment is simply not written. The assistant message persists
+    // either way.
+    if (settingsStore.load().inspectorEnabled) {
+      const telemetryJson = JSON.stringify(fullTelemetry);
+      db.addMessage(threadId, 'assistant', text, 0, [
+        {
+          kind: 'message-telemetry',
+          mimeType: 'application/json',
+          filename: 'telemetry.json',
+          sizeBytes: telemetryJson.length,
+          content: telemetryJson,
+        },
+      ]);
+    } else {
+      db.addMessage(threadId, 'assistant', text, 0);
+    }
     event.sender.send('paia:chat-done', { threadId, text });
 
     // 7. Schedule a post-turn reflection — PAiA reviews the exchange
