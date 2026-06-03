@@ -736,6 +736,40 @@ function PersonasTab({ personas, onChanged, settings, onSave }: {
         {settings.autoRoutePersona !== 'off' && (
           <OllamaParallelTip routerPoolSize={settings.routerPoolSize} />
         )}
+
+        {/* Cloud escalation — only meaningful when auto-route is on */}
+        {settings.autoRoutePersona !== 'off' && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border)' }}>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>Cloud escalation for hard queries</div>
+            <div className="muted-note" style={{ marginBottom: 6, fontSize: 11 }}>
+              When the router flags a query as <em>hard</em> for the local model, optionally promote that single turn to a cloud model. PII is redacted before the request leaves your machine.
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <span style={{ minWidth: 120 }}>Mode</span>
+              <select
+                value={settings.cloudEscalation}
+                onChange={(e) => void onSave({ cloudEscalation: e.target.value as 'off' | 'ask' | 'auto' })}
+              >
+                <option value="off">Off — local only, no prompts</option>
+                <option value="ask">Ask — show a banner, I'll pick per query</option>
+                <option value="auto">Auto — promote silently, mark with ☁️</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              <span style={{ minWidth: 120 }}>Cloud model</span>
+              <input
+                type="text"
+                placeholder="e.g. anthropic/claude-sonnet-4-6"
+                value={settings.cloudEscalationModel}
+                onChange={(e) => void onSave({ cloudEscalationModel: e.target.value })}
+                style={{ flex: 1 }}
+              />
+            </label>
+            <div className="muted-note" style={{ fontSize: 11, marginTop: 4 }}>
+              Configure the provider in Settings → Models first (Anthropic / OpenAI / OpenAI-compatible). Cloud-models toggle must be on.
+            </div>
+          </div>
+        )}
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
           <span style={{ minWidth: 120 }}>Mode</span>
           <select

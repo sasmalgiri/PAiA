@@ -83,6 +83,9 @@ const DEFAULTS: Settings = {
   autoRoutePersona: 'off',
   routerPoolSize: 4,
   routerIntroAcknowledged: false,
+
+  cloudEscalation: 'off',
+  cloudEscalationModel: '',
 };
 
 let cache: Settings | null = null;

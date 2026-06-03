@@ -128,6 +128,7 @@ const api = {
     reason: string;
     candidates: Array<{ id: string; name: string; emoji: string; score: number }>;
     mode: 'embedding-only' | 'embedding+llm' | 'no-personas';
+    difficulty?: 'trivial' | 'moderate' | 'hard';
   }> => ipcRenderer.invoke('paia:persona-route', p),
   personaRouterRefresh: (): Promise<{ embedded: number; reused: number; failed: number }> =>
     ipcRenderer.invoke('paia:persona-router-refresh'),

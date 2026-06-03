@@ -2062,6 +2062,43 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
 .badge.accent { background: var(--accent, #5b9dd9); color: white; }
 .badge.ok { background: var(--success, #5a8); color: white; }
 
+/* ── Escalation prompt ───────────────────────────────────── */
+.escalation-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  background: var(--bg-2);
+  border: 1px solid var(--accent, #5b9dd9);
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.40);
+  z-index: 320;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: escalation-in 180ms ease-out;
+}
+.escalation-head { display: flex; align-items: center; gap: 8px; }
+.escalation-title { font-weight: 600; font-size: 13px; }
+.escalation-body { font-size: 12px; }
+.escalation-query {
+  background: var(--bg-1, rgba(0,0,0,0.05));
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-style: italic;
+}
+.escalation-reason { font-size: 11px; margin-top: 4px; }
+.escalation-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+@keyframes escalation-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .escalation-prompt { animation: none; }
+}
+
 .activity-bar {
   height: 2px;
   width: 100%;

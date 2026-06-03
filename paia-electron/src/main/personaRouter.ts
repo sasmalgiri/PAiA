@@ -177,11 +177,16 @@ export interface RoutingCandidate {
   score: number;
 }
 
+export type QueryDifficulty = 'trivial' | 'moderate' | 'hard';
+
 export interface RoutingDecision {
   personaIds: string[];
   reason: string;
   candidates: RoutingCandidate[];
   mode: 'embedding-only' | 'embedding+llm' | 'no-personas';
+  /** LLM-estimated difficulty of the query. Used by the cloud-escalation
+   * gate to decide whether to offer a promote-to-cloud prompt. */
+  difficulty?: QueryDifficulty;
 }
 
 export async function route(
@@ -235,10 +240,13 @@ export async function route(
   }
 
   const cards = candidates.map((c) => personaCard(c.persona)).join('\n');
-  const system = `You route user queries to the most relevant assistant personas.
-Given a query and a list of candidate personas, pick up to ${poolSize} that are best suited.
-Prefer 1 persona for simple/narrow queries; up to ${poolSize} for cross-domain queries.
-Return ONLY a JSON object on a single line: {"personaIds":["id1","id2"],"reason":"one short sentence"}.
+  const system = `You route user queries to the most relevant assistant personas AND estimate query difficulty.
+Given a query and a list of candidate personas:
+  1. Pick up to ${poolSize} personas best suited.
+  2. Estimate difficulty: "trivial" (greeting / factoid lookup), "moderate" (general task a small model handles fine), or "hard" (needs deep reasoning, professional expertise, long context, or precise multi-step thinking — small local models will likely answer plausibly but wrong).
+Prefer 1 persona for simple/narrow queries; up to ${poolSize} for cross-domain.
+Return ONLY a JSON object on a single line:
+{"personaIds":["id1","id2"],"reason":"one short sentence","difficulty":"trivial|moderate|hard"}
 Do not include any other text. Do not include markdown fences.`;
   const user = `Candidates:\n${cards}\n\nQuery: ${query}\n\nJSON:`;
 
@@ -300,21 +308,30 @@ Do not include any other text. Do not include markdown fences.`;
     reason: parsed.reason || 'Picked by router.',
     candidates: candidateDebug,
     mode: 'embedding+llm',
+    difficulty: parsed.difficulty,
   };
   appendLog({ ts: Date.now(), query, picks, reason: decision.reason, mode: decision.mode });
   return decision;
 }
 
-function parseRouterJson(raw: string): { personaIds: string[]; reason: string } | null {
+function parseRouterJson(raw: string): { personaIds: string[]; reason: string; difficulty?: QueryDifficulty } | null {
   // Small models often wrap JSON in fences or chat about it. Extract the
   // first object that mentions personaIds and try to parse.
   const m = raw.match(/\{[\s\S]*?"personaIds"[\s\S]*?\}/);
   if (!m) return null;
   try {
-    const obj = JSON.parse(m[0]) as { personaIds?: unknown; reason?: unknown };
+    const obj = JSON.parse(m[0]) as { personaIds?: unknown; reason?: unknown; difficulty?: unknown };
     if (!Array.isArray(obj.personaIds)) return null;
     const ids = obj.personaIds.filter((x): x is string => typeof x === 'string');
-    return { personaIds: ids, reason: typeof obj.reason === 'string' ? obj.reason : '' };
+    let difficulty: QueryDifficulty | undefined;
+    if (obj.difficulty === 'trivial' || obj.difficulty === 'moderate' || obj.difficulty === 'hard') {
+      difficulty = obj.difficulty;
+    }
+    return {
+      personaIds: ids,
+      reason: typeof obj.reason === 'string' ? obj.reason : '',
+      difficulty,
+    };
   } catch {
     return null;
   }

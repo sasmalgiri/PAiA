@@ -258,6 +258,19 @@ export interface Settings {
    * changes. */
   defaultModelTier?: 'lightweight' | 'comfortable' | 'strong' | 'moe-class';
 
+  // ─── cloud escalation (A2) ───────────────────────────────────
+  /**
+   * When the router classifies a query as 'hard' and the local default
+   * model is small, optionally promote that one turn to a configured
+   * cloud model.
+   *   off  — never escalate
+   *   ask  — show an inline banner; user clicks Yes/No before chat proceeds
+   *   auto — escalate silently, mark response with a ☁️ chip
+   */
+  cloudEscalation: 'off' | 'ask' | 'auto';
+  /** Qualified cloud model to promote to (e.g. anthropic/claude-sonnet-4-6, openai/gpt-4o). */
+  cloudEscalationModel: string;
+
   /**
    * Auto-routes incoming user messages to the most relevant persona(s).
    *   off     — current behaviour, user picks persona manually

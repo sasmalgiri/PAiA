@@ -40,6 +40,8 @@ import { UpgradePrompt, detectUpgradeError, type UpgradeInfo } from './component
 import { TrialExpiredModal } from './components/TrialExpiredModal';
 import { CouncilPanel, type CouncilState } from './components/CouncilPanel';
 import { MapReducePanel, type MapReduceState } from './components/MapReducePanel';
+import { EscalationPrompt } from './components/EscalationPrompt';
+import { isCloudModel } from './lib/modelGroups';
 import { InputModal } from './components/InputModal';
 import { setLocale } from './lib/i18n';
 
@@ -83,6 +85,14 @@ export function App() {
   const [councilState, setCouncilState] = useState<CouncilState | null>(null);
   // Active long-read (map-reduce) run.
   const [mapReduceState, setMapReduceState] = useState<MapReduceState | null>(null);
+  // Pending cloud-escalation prompt. The send is parked on a resolver
+  // until the user picks; ESC resolves to 'no'.
+  const [escalationPrompt, setEscalationPrompt] = useState<{
+    query: string;
+    reason: string;
+    cloudModel: string;
+    resolve: (choice: 'this-turn' | 'always' | 'no') => void;
+  } | null>(null);
   // Undo-toast for thread soft-delete. Holds the id + name of the
   // just-deleted thread; a timer clears it after 7 seconds.
   const [undoState, setUndoState] = useState<{ id: string; title: string } | null>(null);
@@ -692,8 +702,10 @@ export function App() {
 
       // Auto-route: if enabled, ask the router which persona(s) fit best
       // and either swap the active persona (single mode) or fire a
-      // council run (council mode).
+      // council run (council mode). The router also classifies query
+      // difficulty so we can offer cloud escalation for hard ones.
       let effectivePersonaId: string = settings.personaId;
+      let effectiveModelOverride: string | null = null;
       if (settings.autoRoutePersona !== 'off' && text.trim().length > 0) {
         try {
           const decision = await api.personaRoute({
@@ -710,9 +722,6 @@ export function App() {
             // Council mode + at least 2 valid picks → fire a council
             // run and skip the normal single-chat path entirely.
             if (settings.autoRoutePersona === 'council' && decision.personaIds.length >= 2) {
-              // Release the send guard before delegating, since the
-              // council pipeline runs independently and the user may
-              // want to keep typing.
               sendingRef.current = false;
               await startCouncil(text, decision.personaIds);
               return;
@@ -720,12 +729,44 @@ export function App() {
 
             // Single mode (or council fallback when only 1 pick).
             effectivePersonaId = decision.personaIds[0];
-            // Persist the routed persona to the thread so follow-up
-            // messages stay in the same lane unless re-routed.
             if (effectivePersonaId !== thread.personaId) {
               await api.updateThread(thread.id, { personaId: effectivePersonaId });
               thread = { ...thread, personaId: effectivePersonaId };
               setCurrentThread(thread);
+            }
+
+            // Cloud escalation: only consider when the current model is
+            // local, the router said the query is hard, escalation is
+            // configured, and a cloud target model is set.
+            const currentModel = thread.model ?? settings.model;
+            const isLocalNow = currentModel && !isCloudModel(currentModel);
+            if (
+              isLocalNow &&
+              decision.difficulty === 'hard' &&
+              settings.cloudEscalation !== 'off' &&
+              settings.cloudEscalationModel
+            ) {
+              if (settings.cloudEscalation === 'auto') {
+                effectiveModelOverride = settings.cloudEscalationModel;
+              } else {
+                // 'ask' — park the send on the user's choice.
+                const choice = await new Promise<'this-turn' | 'always' | 'no'>((resolve) => {
+                  setEscalationPrompt({
+                    query: text,
+                    reason: decision.reason,
+                    cloudModel: settings.cloudEscalationModel,
+                    resolve,
+                  });
+                });
+                setEscalationPrompt(null);
+                if (choice === 'this-turn') {
+                  effectiveModelOverride = settings.cloudEscalationModel;
+                } else if (choice === 'always') {
+                  effectiveModelOverride = settings.cloudEscalationModel;
+                  await persistSettings({ cloudEscalation: 'auto' });
+                }
+                // 'no' → keep local; effectiveModelOverride stays null.
+              }
             }
           }
         } catch (err) {
@@ -739,7 +780,7 @@ export function App() {
 
       const persona = personas.find((p) => p.id === effectivePersonaId) ?? personas[0];
       const systemPrompt = persona?.systemPrompt ?? 'You are a helpful assistant.';
-      const model = thread.model ?? settings.model;
+      const model = effectiveModelOverride ?? thread.model ?? settings.model;
       if (!model) {
         return; // UI shows the warning instead; outer finally releases the guard
       }
@@ -924,6 +965,15 @@ export function App() {
             if (mapReduceState.runId) void api.mapReduceAbort(mapReduceState.runId);
             setMapReduceState((prev) => prev ? { ...prev, status: 'error', error: 'Aborted by user.' } : prev);
           }}
+        />
+      )}
+
+      {escalationPrompt && (
+        <EscalationPrompt
+          query={escalationPrompt.query}
+          reason={escalationPrompt.reason}
+          cloudModel={escalationPrompt.cloudModel}
+          onChoice={(c) => escalationPrompt.resolve(c)}
         />
       )}
 
