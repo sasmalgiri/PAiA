@@ -84,8 +84,9 @@ async function ollamaChat(
   model: string,
   messages: ChatMessage[],
   onToken: (t: string) => void,
+  options?: { format?: 'json' },
 ): Promise<string> {
-  return ollama.chat(model, messages, onToken);
+  return ollama.chat(model, messages, onToken, undefined, options);
 }
 
 // ─── openai ────────────────────────────────────────────────────────
@@ -420,6 +421,7 @@ export async function chat(
   qualifiedModel: string,
   messages: ChatMessage[],
   onToken: (t: string) => void,
+  options?: { format?: 'json' },
 ): Promise<string> {
   const { providerId, model } = parseQualified(qualifiedModel);
   const settings = settingsStore.load();
@@ -442,7 +444,7 @@ export async function chat(
 
   switch (providerId) {
     case 'ollama':
-      return ollamaChat(model, messages, onToken);
+      return ollamaChat(model, messages, onToken, options);
     case 'openai':
       return openaiChat(cfg, model, messages, onToken);
     case 'anthropic':

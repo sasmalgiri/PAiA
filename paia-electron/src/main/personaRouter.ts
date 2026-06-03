@@ -19,10 +19,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
 import * as personas from './personas';
-import * as providers from './providers';
 import * as rag from './rag';
 import * as settingsStore from './settings';
 import { logger } from './logger';
+import { requestJson } from './structuredOutput';
+import type { SchemaShape } from '../shared/structuredOutput';
 import type { Persona } from '../shared/types';
 
 const EMBED_CACHE_VERSION = 1;
@@ -244,43 +245,37 @@ export async function route(
 Given a query and a list of candidate personas:
   1. Pick up to ${poolSize} personas best suited.
   2. Estimate difficulty: "trivial" (greeting / factoid lookup), "moderate" (general task a small model handles fine), or "hard" (needs deep reasoning, professional expertise, long context, or precise multi-step thinking — small local models will likely answer plausibly but wrong).
-Prefer 1 persona for simple/narrow queries; up to ${poolSize} for cross-domain.
-Return ONLY a JSON object on a single line:
-{"personaIds":["id1","id2"],"reason":"one short sentence","difficulty":"trivial|moderate|hard"}
-Do not include any other text. Do not include markdown fences.`;
-  const user = `Candidates:\n${cards}\n\nQuery: ${query}\n\nJSON:`;
+Prefer 1 persona for simple/narrow queries; up to ${poolSize} for cross-domain.`;
+  const user = `Candidates:\n${cards}\n\nQuery: ${query}`;
 
-  let raw = '';
-  try {
-    raw = await providers.chat(
-      model,
-      [
-        { role: 'system', content: system },
-        { role: 'user', content: user },
-      ],
-      () => {
-        /* discard tokens, we only want the final string */
+  const schema: SchemaShape = {
+    kind: 'object',
+    fields: {
+      personaIds: { schema: { kind: 'array', items: { kind: 'string' } } },
+      reason: { schema: { kind: 'string' }, required: false },
+      difficulty: {
+        schema: { kind: 'enum', values: ['trivial', 'moderate', 'hard'] },
+        required: false,
       },
-    );
+    },
+  };
+
+  let parsed: { personaIds: string[]; reason?: string; difficulty?: QueryDifficulty };
+  try {
+    const result = await requestJson<{ personaIds: string[]; reason?: string; difficulty?: QueryDifficulty }>({
+      model,
+      system,
+      user,
+      schema,
+      maxAttempts: 2,
+    });
+    parsed = result.value;
   } catch (err) {
-    logger.warn('router: LLM rerank failed, falling back to semantic top-N', err);
+    logger.warn('router: structured LLM rerank failed, falling back to semantic top-N', err);
     const picks = candidates.slice(0, poolSize).map((c) => c.persona.id);
     const decision: RoutingDecision = {
       personaIds: picks,
       reason: 'Router model unavailable — used semantic similarity only.',
-      candidates: candidateDebug,
-      mode: 'embedding-only',
-    };
-    appendLog({ ts: Date.now(), query, picks, reason: decision.reason, mode: decision.mode });
-    return decision;
-  }
-
-  const parsed = parseRouterJson(raw);
-  if (!parsed) {
-    const picks = candidates.slice(0, poolSize).map((c) => c.persona.id);
-    const decision: RoutingDecision = {
-      personaIds: picks,
-      reason: 'Router output was not valid JSON — used semantic similarity only.',
       candidates: candidateDebug,
       mode: 'embedding-only',
     };
@@ -312,29 +307,6 @@ Do not include any other text. Do not include markdown fences.`;
   };
   appendLog({ ts: Date.now(), query, picks, reason: decision.reason, mode: decision.mode });
   return decision;
-}
-
-function parseRouterJson(raw: string): { personaIds: string[]; reason: string; difficulty?: QueryDifficulty } | null {
-  // Small models often wrap JSON in fences or chat about it. Extract the
-  // first object that mentions personaIds and try to parse.
-  const m = raw.match(/\{[\s\S]*?"personaIds"[\s\S]*?\}/);
-  if (!m) return null;
-  try {
-    const obj = JSON.parse(m[0]) as { personaIds?: unknown; reason?: unknown; difficulty?: unknown };
-    if (!Array.isArray(obj.personaIds)) return null;
-    const ids = obj.personaIds.filter((x): x is string => typeof x === 'string');
-    let difficulty: QueryDifficulty | undefined;
-    if (obj.difficulty === 'trivial' || obj.difficulty === 'moderate' || obj.difficulty === 'hard') {
-      difficulty = obj.difficulty;
-    }
-    return {
-      personaIds: ids,
-      reason: typeof obj.reason === 'string' ? obj.reason : '',
-      difficulty,
-    };
-  } catch {
-    return null;
-  }
 }
 
 /** Read-only access for UI to surface recent decisions. */

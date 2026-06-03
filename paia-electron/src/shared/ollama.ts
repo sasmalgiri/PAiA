@@ -97,11 +97,14 @@ export class OllamaClient {
     messages: ChatMessage[],
     onToken?: (token: string) => void,
     signal?: AbortSignal,
+    options?: { format?: 'json' },
   ): Promise<string> {
+    const body: Record<string, unknown> = { model, messages, stream: true };
+    if (options?.format) body.format = options.format;
     const res = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model, messages, stream: true }),
+      body: JSON.stringify(body),
       signal,
     });
 
