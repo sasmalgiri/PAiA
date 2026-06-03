@@ -24,6 +24,7 @@ import {
   type IpcMainInvokeEvent,
 } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { redact } from '../shared/redaction';
 import { OllamaClient } from '../shared/ollama';
 import { logger } from './logger';
@@ -34,6 +35,8 @@ import * as personaRouter from './personaRouter';
 import * as council from './council';
 import * as mapReduce from './mapReduce';
 import * as hardware from './hardware';
+import * as packs from './packs';
+import * as packRegistry from './packRegistry';
 import * as screenSvc from './screen';
 import { captureRegion } from './region';
 import * as updater from './updater';
@@ -431,6 +434,72 @@ ipcMain.handle('paia:map-reduce-abort', (_e, runId: string) => mapReduce.abortMa
 ipcMain.handle('paia:hardware-probe', (_e, force?: boolean) => hardware.probe(force));
 ipcMain.handle('paia:hardware-defaults', () => hardware.defaultsForHardware());
 ipcMain.handle('paia:hardware-recommendations', (_e, tier: hardware.HardwareTier) => hardware.recommendationsFor(tier));
+
+// ─── pack marketplace IPC (v3-A1) ────────────────────────────────
+
+ipcMain.handle('paia:packs-list-installed', () => packs.listInstalled());
+
+ipcMain.handle('paia:packs-list-available', async () => {
+  const urls = settingsStore.load().packRegistries;
+  return packRegistry.listAvailable(urls);
+});
+
+ipcMain.handle('paia:packs-install', async (event, p: { entry: packRegistry.RegistryEntry; applyDefaults: boolean }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  // Download
+  const tmpPath = await packRegistry.downloadPack(p.entry);
+  try {
+    const pack = await packs.loadFromFile(tmpPath);
+    const licenseStatus = await import('./license').then((m) => m.status());
+    const installed = await packs.install(pack, {
+      applyDefaults: p.applyDefaults,
+      currentTier: licenseStatus.effectiveTier as packs.InstallOptions['currentTier'],
+      paiaVersion: app.getVersion(),
+      onProgress: (prog) => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send('paia:packs-install-progress', prog);
+        }
+      },
+    });
+    packRegistry.invalidateCache();
+    return { ok: true as const, installed };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false as const, error: message };
+  } finally {
+    try { fs.unlinkSync(tmpPath); } catch { /* swallow */ }
+  }
+});
+
+ipcMain.handle('paia:packs-install-file', async (event, filePath: string) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  try {
+    const pack = await packs.loadFromFile(filePath);
+    const licenseStatus = await import('./license').then((m) => m.status());
+    const installed = await packs.install(pack, {
+      applyDefaults: false,
+      currentTier: licenseStatus.effectiveTier as packs.InstallOptions['currentTier'],
+      paiaVersion: app.getVersion(),
+      onProgress: (prog) => {
+        if (win && !win.isDestroyed()) {
+          win.webContents.send('paia:packs-install-progress', prog);
+        }
+      },
+    });
+    return { ok: true as const, installed };
+  } catch (err) {
+    return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
+  }
+});
+
+ipcMain.handle('paia:packs-uninstall', async (_e, packId: string) => {
+  try {
+    await packs.uninstall(packId);
+    return { ok: true as const };
+  } catch (err) {
+    return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
+  }
+});
 
 // ─── threads / messages IPC ────────────────────────────────────────
 

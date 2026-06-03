@@ -180,6 +180,45 @@ const api = {
     ipcRenderer.invoke('paia:hardware-defaults'),
   hardwareRecommendations: (tier: HardwareTier): Promise<ModelRecommendation[]> =>
     ipcRenderer.invoke('paia:hardware-recommendations', tier),
+
+  // ── pack marketplace (v3-A1) ─────────────────────────────
+  packsListInstalled: (): Promise<Array<{
+    id: string; name: string; version: string; installedAt: number;
+    personaIds: string[]; collectionIds: string[];
+    defaultsBackup: Record<string, unknown>;
+  }>> => ipcRenderer.invoke('paia:packs-list-installed'),
+  packsListAvailable: (): Promise<Array<{
+    id: string; version: string; name: string; description: string;
+    author: { name: string; url?: string };
+    kind: 'vertical' | 'persona-only' | 'knowledge-only';
+    requiresTier?: 'free' | 'pro' | 'team' | 'legal';
+    downloadUrl: string; sizeBytes: number; iconUrl?: string;
+    tags?: string[]; publishedAt?: number;
+  }>> => ipcRenderer.invoke('paia:packs-list-available'),
+  packsInstall: (p: {
+    entry: {
+      id: string; version: string; name: string; description: string;
+      author: { name: string; url?: string };
+      kind: 'vertical' | 'persona-only' | 'knowledge-only';
+      requiresTier?: 'free' | 'pro' | 'team' | 'legal';
+      downloadUrl: string; sizeBytes: number;
+    };
+    applyDefaults: boolean;
+  }): Promise<{ ok: true; installed: { id: string; name: string; version: string } } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('paia:packs-install', p),
+  packsInstallFile: (filePath: string): Promise<{ ok: true; installed: { id: string; name: string; version: string } } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('paia:packs-install-file', filePath),
+  packsUninstall: (packId: string): Promise<{ ok: true } | { ok: false; error: string }> =>
+    ipcRenderer.invoke('paia:packs-uninstall', packId),
+  onPacksInstallProgress: (cb: (p: {
+    packId: string;
+    stage: 'verify' | 'personas' | 'collection' | 'ingest' | 'defaults' | 'done' | 'error';
+    current?: number; total?: number; message?: string;
+  }) => void): (() => void) => {
+    const handler = (_e: unknown, prog: Parameters<typeof cb>[0]): void => cb(prog);
+    ipcRenderer.on('paia:packs-install-progress', handler);
+    return (): void => { ipcRenderer.removeListener('paia:packs-install-progress', handler); };
+  },
   onMapReduceEvent: (cb: (ev: {
     runId: string;
     threadId: string;

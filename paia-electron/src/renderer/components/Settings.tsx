@@ -39,6 +39,7 @@ import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/
 import { CloudModelConsentModal } from './CloudModelConsentModal';
 import { TaskQueuePanel } from './TaskQueuePanel';
 import { ModelStore } from './ModelStore';
+import { PackInstaller } from './PackInstaller';
 import { useConfirm } from '../lib/useConfirm';
 
 interface SettingsViewProps {
@@ -55,6 +56,7 @@ type Tab =
   | 'models'
   | 'personas'
   | 'knowledge'
+  | 'marketplace'
   | 'tools'
   | 'agent'
   | 'task-queue'
@@ -110,6 +112,7 @@ const TAB_GROUPS: TabGroup[] = [
       { id: 'models', label: 'Models', keywords: 'ollama openai anthropic provider api key' },
       { id: 'personas', label: 'Personas', keywords: 'system prompt character assistant' },
       { id: 'knowledge', label: 'Knowledge', keywords: 'rag documents embed collection' },
+      { id: 'marketplace', label: 'Marketplace', keywords: 'pack install legal vertical share' },
       { id: 'memory', label: 'Memory', keywords: 'remember recall fact preference episode' },
       { id: 'tools', label: 'MCP tools', keywords: 'mcp model context protocol server' },
     ],
@@ -234,6 +237,7 @@ export function SettingsView({ settings, personas, onSave, onBack, onPersonasCha
           <PersonasTab personas={personas} onChanged={onPersonasChanged} settings={settings} onSave={onSave} />
         )}
         {tab === 'knowledge' && <KnowledgeTab />}
+        {tab === 'marketplace' && <PackInstaller />}
         {tab === 'tools' && <ToolsTab />}
         {tab === 'agent' && <AgentTab settings={settings} onSave={onSave} />}
         {tab === 'task-queue' && <TaskQueuePanel />}

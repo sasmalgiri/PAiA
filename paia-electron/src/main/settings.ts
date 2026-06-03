@@ -91,6 +91,8 @@ const DEFAULTS: Settings = {
   tipsDisabled: false,
 
   inspectorEnabled: true,
+
+  packRegistries: ['https://github.com/sasmalgiri/PAiA/releases/latest/download/index.json'],
 };
 
 let cache: Settings | null = null;

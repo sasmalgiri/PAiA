@@ -210,7 +210,20 @@ function saveCustom(list: Persona[]): void {
 }
 
 export function listPersonas(): Persona[] {
-  return [...BUILTIN, ...loadCustom()];
+  // Built-ins first, then user-defined customs, then pack-installed
+  // personas (loaded lazily to avoid a circular dependency with packs.ts).
+  // Pack personas are read directly from disk on each call — there are
+  // typically a handful and the cost is negligible.
+  let packPersonas: Persona[] = [];
+  try {
+    // Dynamic require so this module stays importable from scripts that
+    // don't pull in the full Electron + packs runtime.
+    const packs = require('./packs') as { loadPackPersonas?: () => Persona[] };
+    packPersonas = packs.loadPackPersonas?.() ?? [];
+  } catch {
+    /* swallow — packs module unavailable in test contexts */
+  }
+  return [...BUILTIN, ...loadCustom(), ...packPersonas];
 }
 
 export function getPersona(id: string): Persona | null {

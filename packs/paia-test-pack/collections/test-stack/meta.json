@@ -1,0 +1,5 @@
+{
+  "name": "Test Stack",
+  "description": "Single-document knowledge stack for testing the marketplace install path.",
+  "embedModel": "nomic-embed-text"
+}

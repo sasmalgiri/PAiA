@@ -90,6 +90,12 @@ export interface Persona {
    * user attached to the thread manually. Union, de-duplicated.
    */
   ragCollectionIds?: string[];
+  /**
+   * Set when this persona was installed by a knowledge stack pack.
+   * Lets the UI surface a "from <pack>" chip and lets uninstall clean
+   * up reliably. Undefined for built-in or user-defined personas.
+   */
+  packId?: string;
 }
 
 // ─── settings ──────────────────────────────────────────────────────
@@ -283,6 +289,12 @@ export interface Settings {
    *  on prior messages stays — flip on later to re-enable.
    *  Default true; flip off on shared machines or regulated envs. */
   inspectorEnabled: boolean;
+
+  // ─── pack marketplace (v3-A1) ────────────────────────────────
+  /** Pack registry index URLs to query when browsing the marketplace.
+   *  Defaults to the official PAiA registry. Power users can add
+   *  third-party registries (signature verification still gates trust). */
+  packRegistries: string[];
 
   /**
    * Auto-routes incoming user messages to the most relevant persona(s).

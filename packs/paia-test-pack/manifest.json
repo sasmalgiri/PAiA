@@ -1,0 +1,10 @@
+{
+  "id": "paia-test-pack",
+  "name": "PAiA Test Pack",
+  "version": "0.1.0",
+  "description": "End-to-end smoke test pack: one persona, one tiny knowledge stack, no paid tier. Safe to install and uninstall.",
+  "author": { "name": "PAiA", "url": "https://paia.app" },
+  "kind": "vertical",
+  "paiaMinVersion": "2.0.0",
+  "ollamaModels": ["nomic-embed-text"]
+}

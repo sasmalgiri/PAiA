@@ -2285,6 +2285,30 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
 .inspector-citations { margin: 0; padding-left: 16px; font-size: 11px; }
 .inspector-citations li { padding: 2px 0; }
 
+/* ── Pack Marketplace ────────────────────────────────────── */
+.pack-list { display: flex; flex-direction: column; gap: 8px; }
+.pack-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-2);
+}
+.pack-row.pack-paid { border-left: 3px solid var(--accent, #5b9dd9); }
+.pack-row-info { flex: 1; min-width: 0; }
+.pack-row-name { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+.pack-row .badge { font-size: 10px; }
+.pack-progress {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--bg-2);
+  border-left: 3px solid var(--accent, #5b9dd9);
+  border-radius: 4px;
+}
+.pack-progress-stage { font-size: 12px; font-weight: 600; text-transform: capitalize; }
+
 .activity-bar {
   height: 2px;
   width: 100%;
