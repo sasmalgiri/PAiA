@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PAiA</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="root">
+    <header>
+      <span class="title">PAiA</span>
+      <span class="status" id="status">…</span>
+    </header>
+    <div id="unconfigured" class="hidden">
+      <p>Pair this extension with your PAiA desktop app first.</p>
+      <ol>
+        <li>Open PAiA → Settings → API server → make sure it's running.</li>
+        <li>Copy the API key.</li>
+        <li>Click <button id="open-options">Open extension options</button> to paste it.</li>
+      </ol>
+    </div>
+    <div id="composer" class="hidden">
+      <textarea id="prompt" rows="6" placeholder="Ask PAiA…" autofocus></textarea>
+      <div class="row">
+        <button id="send" disabled>Send</button>
+        <span class="muted" id="hint">Ctrl+Enter to send</span>
+      </div>
+    </div>
+    <div id="response" class="hidden"></div>
+  </div>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

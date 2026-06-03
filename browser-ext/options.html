@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PAiA — Options</title>
+  <link rel="stylesheet" href="popup.css" />
+  <style>
+    body { width: 480px; min-height: 320px; padding: 18px; }
+    label { display: block; font-size: 13px; margin-top: 12px; color: #c2c8d0; }
+    input { width: 100%; box-sizing: border-box; background: #16181d; color: #e6e8eb;
+            border: 1px solid #2c3038; border-radius: 5px; padding: 6px 8px;
+            font: 13px monospace; margin-top: 4px; }
+    input:focus { outline: 2px solid #5b9dd9; }
+    .field-hint { color: #8b96a2; font-size: 11px; margin-top: 3px; }
+    .actions { margin-top: 18px; display: flex; gap: 8px; }
+    #status { margin-top: 10px; font-size: 12px; min-height: 1em; }
+    #status.ok  { color: #79c879; }
+    #status.bad { color: #d97777; }
+  </style>
+</head>
+<body>
+  <header><span class="title">PAiA — Extension options</span></header>
+  <p style="font-size:12px; color:#8b96a2; margin-top:8px;">
+    The PAiA desktop app exposes a local API server on 127.0.0.1. Open
+    PAiA → Settings → API server, make sure it's running, copy the URL
+    and API key, paste them here.
+  </p>
+
+  <label>
+    Endpoint (e.g. <code>http://127.0.0.1:8744</code>)
+    <input id="endpoint" type="text" placeholder="http://127.0.0.1:8744" />
+  </label>
+
+  <label>
+    API key (bearer token from Settings → API server)
+    <input id="apiKey" type="password" placeholder="paste here" />
+    <div class="field-hint">Stored locally in this extension; never sent anywhere except PAiA's local endpoint.</div>
+  </label>
+
+  <div class="actions">
+    <button id="save">Save &amp; test</button>
+    <button id="clear" class="secondary">Clear</button>
+  </div>
+  <div id="status"></div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

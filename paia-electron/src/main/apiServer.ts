@@ -105,6 +105,29 @@ async function readJson(req: http.IncomingMessage): Promise<unknown> {
 async function handle(req: http.IncomingMessage, res: http.ServerResponse, cfg: ApiConfig): Promise<void> {
   const url = new URL(req.url ?? '/', 'http://127.0.0.1');
 
+  // CORS for browser extensions only. Restricted to chrome-extension://
+  // and moz-extension:// origins — neither matches a real website, so a
+  // tab-driven attacker can't ride this surface. The bearer token still
+  // gates every endpoint regardless of origin.
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '';
+  const isExtensionOrigin =
+    origin.startsWith('chrome-extension://') ||
+    origin.startsWith('moz-extension://') ||
+    origin.startsWith('safari-web-extension://');
+  if (isExtensionOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+  if (req.method === 'OPTIONS') {
+    // Preflight — succeed silently. Auth happens on the real request.
+    res.statusCode = 204;
+    res.end();
+    return;
+  }
+
   // /v1/info is still auth-protected — this is a private API.
   // Timing-safe comparison: even though the server binds to 127.0.0.1,
   // a co-resident process can still time HTTP requests and brute-force
