@@ -549,7 +549,7 @@ export type QualifiedModel = string;
 
 // ─── licensing ─────────────────────────────────────────────────────
 
-export type LicenseTier = 'free' | 'pro' | 'team';
+export type LicenseTier = 'free' | 'pro' | 'legal' | 'team';
 
 export interface LicensePayload {
   email: string;
@@ -559,6 +559,15 @@ export interface LicensePayload {
   expiresAt: number | null; // null = perpetual
   // Optional machine-fingerprint hash; ignored if absent.
   machineHash?: string;
+  // ─── team / org licenses (v3-B2) ──────────────────────────────
+  /** Total seat count purchased. Only meaningful for tier='team'. */
+  seats?: number;
+  /** Stable subscription id from the merchant of record. Used by the
+   *  "Manage subscription" link in Settings → License to open the
+   *  customer's MoR portal. */
+  subscriptionId?: string;
+  /** Whether this license has admin privileges over the team seats. */
+  isAdmin?: boolean;
 }
 
 export interface SignedLicense {

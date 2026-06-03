@@ -37,6 +37,7 @@ import * as mapReduce from './mapReduce';
 import * as hardware from './hardware';
 import * as packs from './packs';
 import * as packRegistry from './packRegistry';
+import * as checkout from './checkout';
 import * as screenSvc from './screen';
 import { captureRegion } from './region';
 import * as updater from './updater';
@@ -500,6 +501,16 @@ ipcMain.handle('paia:packs-uninstall', async (_e, packId: string) => {
     return { ok: false as const, error: err instanceof Error ? err.message : String(err) };
   }
 });
+
+// ─── commerce IPC (v3-B2) ────────────────────────────────────────
+
+ipcMain.handle('paia:checkout-open', async (_e, target: 'pro' | 'legal' | 'team') => {
+  await checkout.openCheckout(target);
+});
+ipcMain.handle('paia:checkout-portal', async (_e, subscriptionId?: string) => {
+  await checkout.openCustomerPortal(subscriptionId);
+});
+ipcMain.handle('paia:checkout-install-id', () => checkout.getInstallId());
 
 // ─── threads / messages IPC ────────────────────────────────────────
 

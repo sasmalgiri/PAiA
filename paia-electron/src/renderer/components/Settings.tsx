@@ -1892,6 +1892,48 @@ function LicenseTab() {
         feature at install time.
       </div>
 
+      {/* Commerce actions: upgrade for non-Pro+, manage portal for licensed. */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 8 }}>
+        {(status.effectiveTier === 'free' || status.source === 'trial') && (
+          <>
+            <button
+              type="button"
+              className="primary small"
+              onClick={() => { void api.checkoutOpen('pro'); }}
+              title="Opens your browser to the secure checkout"
+            >
+              Upgrade to Pro — $9/mo
+            </button>
+            <button
+              type="button"
+              className="small"
+              onClick={() => { void api.checkoutOpen('legal'); }}
+              title="Includes the PAiA Legal vertical pack"
+            >
+              Upgrade to Legal — $49/mo
+            </button>
+            <button
+              type="button"
+              className="small"
+              onClick={() => { void api.checkoutOpen('team'); }}
+              title="Team tier (min 5 seats), includes classroom + enforcement"
+            >
+              Upgrade to Team — $19/seat/mo
+            </button>
+          </>
+        )}
+        {status.source === 'license' && status.license && (
+          <button
+            type="button"
+            className="small"
+            onClick={() => { void api.checkoutPortal(status.license?.subscriptionId); }}
+            title="Opens the merchant portal to update payment, cancel, or change seats"
+          >
+            Manage subscription →
+          </button>
+        )}
+      </div>
+
       {status.effectiveTier === 'free' && meters.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
           <div className="muted-note"><strong>Free-tier usage</strong></div>

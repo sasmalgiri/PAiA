@@ -267,6 +267,12 @@ const PRO_FEATURES: FeatureFlag[] = [
   'beta',
 ];
 
+// Legal tier = Pro features + the PAiA Legal vertical pack gate. The
+// pack itself is installed via the marketplace; this tier just permits
+// the install when packs.install() sees requiresTier: 'legal'.
+const LEGAL_FEATURES: FeatureFlag[] = [
+  ...PRO_FEATURES,
+];
 const TEAM_FEATURES: FeatureFlag[] = [
   ...PRO_FEATURES,
   'classroom',
@@ -276,6 +282,7 @@ const TEAM_FEATURES: FeatureFlag[] = [
 export function isFeatureEnabled(feature: FeatureFlag): boolean {
   const tier = status().effectiveTier;
   if (tier === 'team') return TEAM_FEATURES.includes(feature);
+  if (tier === 'legal') return LEGAL_FEATURES.includes(feature);
   if (tier === 'pro') return PRO_FEATURES.includes(feature);
   return FREE_FEATURES.includes(feature);
 }

@@ -219,6 +219,14 @@ const api = {
     ipcRenderer.on('paia:packs-install-progress', handler);
     return (): void => { ipcRenderer.removeListener('paia:packs-install-progress', handler); };
   },
+
+  // ── commerce (v3-B2) ─────────────────────────────────────
+  checkoutOpen: (target: 'pro' | 'legal' | 'team'): Promise<void> =>
+    ipcRenderer.invoke('paia:checkout-open', target),
+  checkoutPortal: (subscriptionId?: string): Promise<void> =>
+    ipcRenderer.invoke('paia:checkout-portal', subscriptionId),
+  checkoutInstallId: (): Promise<string> =>
+    ipcRenderer.invoke('paia:checkout-install-id'),
   onMapReduceEvent: (cb: (ev: {
     runId: string;
     threadId: string;

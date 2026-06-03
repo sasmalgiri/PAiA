@@ -11,7 +11,7 @@ import { useFocusTrap } from '../lib/focusTrap';
 
 export interface UpgradeInfo {
   feature: string;
-  targetTier: 'pro' | 'team';
+  targetTier: 'pro' | 'legal' | 'team';
 }
 
 /**
@@ -20,9 +20,9 @@ export interface UpgradeInfo {
  */
 export function detectUpgradeError(err: unknown): UpgradeInfo | null {
   const msg = err instanceof Error ? err.message : String(err ?? '');
-  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Team)/i);
+  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Legal|Team)/i);
   if (!m) return null;
-  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'team' };
+  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'legal' | 'team' };
 }
 
 interface Props {
@@ -35,7 +35,8 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   useFocusTrap(containerRef, { onClose });
 
-  const tierLabel = info.targetTier === 'team' ? 'Team' : 'Pro';
+  const tierLabel = info.targetTier === 'team' ? 'Team' :
+                    info.targetTier === 'legal' ? 'Legal' : 'Pro';
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -67,7 +68,7 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
                 <li>Local models only</li>
               </ul>
             </div>
-            <div className={`upgrade-tier upgrade-tier-featured ${info.targetTier === 'pro' ? 'target' : ''}`}>
+            <div className={`upgrade-tier ${info.targetTier === 'pro' ? 'upgrade-tier-featured target' : ''}`}>
               <div className="upgrade-tier-name">Pro</div>
               <div className="upgrade-tier-price">$9 <small>/ mo</small></div>
               <ul>
@@ -77,7 +78,17 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
                 <li>Ambient, autopilot, plugins</li>
               </ul>
             </div>
-            <div className={`upgrade-tier ${info.targetTier === 'team' ? 'target' : ''}`}>
+            <div className={`upgrade-tier ${info.targetTier === 'legal' ? 'upgrade-tier-featured target' : ''}`}>
+              <div className="upgrade-tier-name">Legal</div>
+              <div className="upgrade-tier-price">$49 <small>/ mo</small></div>
+              <ul>
+                <li>Everything in Pro</li>
+                <li>PAiA Legal vertical pack</li>
+                <li>Patent / corporate / privacy /<br/>compliance / litigation / M&A /<br/>IP licensing / employment personas</li>
+                <li>Privilege-protective defaults</li>
+              </ul>
+            </div>
+            <div className={`upgrade-tier ${info.targetTier === 'team' ? 'upgrade-tier-featured target' : ''}`}>
               <div className="upgrade-tier-name">Team</div>
               <div className="upgrade-tier-price">$19 <small>/ seat</small></div>
               <ul>
@@ -102,8 +113,18 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
           >
             See full pricing
           </button>
+          {info.targetTier !== 'team' && (
+            <button
+              type="button"
+              className="primary"
+              onClick={() => { void api.checkoutOpen(info.targetTier); }}
+              title="Opens your browser to the secure checkout. License is emailed and activates here."
+            >
+              Upgrade to {tierLabel} →
+            </button>
+          )}
           <button type="button" className="primary" onClick={() => { onOpenLicense(); onClose(); }}>
-            Activate licence →
+            Activate licence
           </button>
         </div>
       </div>
