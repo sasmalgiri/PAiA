@@ -23,6 +23,10 @@ export type { GpuInfo, GpuVendor, HardwareInfo, HardwareTier, ModelRecommendatio
 
 const CACHE_VERSION = 1;
 let cache: { version: number; info: HardwareInfo } | null = null;
+// Coalesce concurrent probe() calls onto a single in-flight Promise so
+// the GPU detection doesn't run twice when (e.g.) Settings + Onboarding
+// both probe at boot.
+let probing: Promise<HardwareInfo> | null = null;
 
 function cachePath(): string {
   return path.join(app.getPath('userData'), 'hardware.json');
@@ -55,13 +59,21 @@ function saveCache(info: HardwareInfo): void {
 
 function execWithTimeout(cmd: string, timeoutMs = 4000): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
     const child = exec(cmd, { timeout: timeoutMs, windowsHide: true }, (err, stdout) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(killTimer);
       if (err) return reject(err);
       resolve(stdout);
     });
     // exec's `timeout` option fires SIGTERM; on Windows we also need a
-    // manual kill in case the child is wedged in a UAC prompt.
-    setTimeout(() => { try { child.kill('SIGKILL'); } catch { /* ignore */ } }, timeoutMs + 500);
+    // manual kill in case the child is wedged in a UAC prompt. Cleared
+    // on completion so the timer doesn't hold a reference to the dead
+    // child.
+    const killTimer = setTimeout(() => {
+      try { child.kill('SIGKILL'); } catch { /* ignore */ }
+    }, timeoutMs + 500);
   });
 }
 
@@ -190,8 +202,21 @@ export async function probe(force = false): Promise<HardwareInfo> {
   if (!force) {
     const cached = loadCache();
     if (cached) return cached;
+    // A concurrent caller may already be probing; piggyback on it.
+    if (probing) return probing;
   }
 
+  probing = (async (): Promise<HardwareInfo> => {
+    try {
+      return await doProbe();
+    } finally {
+      probing = null;
+    }
+  })();
+  return probing;
+}
+
+async function doProbe(): Promise<HardwareInfo> {
   const platform = process.platform;
   const arch = process.arch;
   const cpus = os.cpus();

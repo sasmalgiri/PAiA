@@ -63,6 +63,12 @@ export async function requestJson<T>(opts: RequestJsonOptions): Promise<RequestJ
   const rawResponses: string[] = [];
   let lastFailure = '';
   let lastPath = '';
+  // useFormat tracks the running decision — older Ollama versions reject
+  // `format: 'json'` with a 400. If the first attempt fails AT THE
+  // PROVIDER LAYER (not validation), we drop the flag and retry with a
+  // plain call. The schema hint in the system prompt is enough to keep
+  // the LLM on track without API-level constraint.
+  let useFormat = useJsonFormat;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const messages: ChatMessage[] = [{ role: 'system', content: baseSystem }];
@@ -92,12 +98,20 @@ export async function requestJson<T>(opts: RequestJsonOptions): Promise<RequestJ
         opts.model,
         messages,
         () => { /* discard tokens — we just want the final string */ },
-        useJsonFormat ? { format: 'json' } : undefined,
+        useFormat ? { format: 'json' } : undefined,
       );
     } catch (err) {
       lastFailure = err instanceof Error ? err.message : String(err);
       lastPath = '';
       logger.warn(`structuredOutput: provider call failed on attempt ${attempt}: ${lastFailure}`);
+      // If the failure mentions the format param, drop it for the next
+      // retry — old Ollama returns HTTP 400 with "invalid format option"
+      // or similar. We bias toward retrying without rather than getting
+      // stuck on the same bad request.
+      if (useFormat && /format|400|bad request/i.test(lastFailure)) {
+        logger.info('structuredOutput: dropping format:json for subsequent retries');
+        useFormat = false;
+      }
       continue;
     }
     rawResponses.push(raw);
