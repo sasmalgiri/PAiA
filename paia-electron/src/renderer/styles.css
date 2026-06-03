@@ -1992,6 +1992,76 @@ button.primary:active, button.secondary:active, button.danger:active, .icon-btn:
   .council-backdrop { animation: none; }
 }
 
+/* ── Model Store ─────────────────────────────────────────── */
+.model-store { display: flex; flex-direction: column; gap: 8px; }
+.model-store-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.model-store-tier { font-weight: 600; font-size: 14px; }
+.model-store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin: 4px 0;
+}
+.model-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.model-card.recommended {
+  border-color: var(--accent, #5b9dd9);
+  box-shadow: 0 0 0 1px var(--accent, #5b9dd9) inset;
+}
+.model-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.model-card-head h4 {
+  margin: 0;
+  font-size: 13px;
+  flex: 1;
+}
+.model-card-specs { font-size: 11px; }
+.model-card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.model-card-tags .tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--bg-1, rgba(0,0,0,0.05));
+  border-radius: 999px;
+  color: var(--muted);
+}
+.model-card-pull { display: flex; flex-direction: column; gap: 4px; }
+.model-card-progress {
+  height: 4px;
+  background: var(--bg-1, rgba(0,0,0,0.1));
+  border-radius: 2px;
+  overflow: hidden;
+}
+.model-card-progress-bar {
+  height: 100%;
+  background: var(--accent, #5b9dd9);
+  transition: width 250ms ease;
+}
+.model-store-other { margin-top: 4px; }
+.model-store-tier-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.badge.accent { background: var(--accent, #5b9dd9); color: white; }
+.badge.ok { background: var(--success, #5a8); color: white; }
+
 .activity-bar {
   height: 2px;
   width: 100%;

@@ -251,6 +251,13 @@ export interface Settings {
   trialExpiryAcknowledged: boolean;
 
   // ─── persona router (MoE) ────────────────────────────────────────
+  // (see hardware types below for `defaultModelTier`)
+
+  /** Once-set tier the user accepted from the model store. Lets us skip
+   * the recommendation prompt on subsequent launches unless hardware
+   * changes. */
+  defaultModelTier?: 'lightweight' | 'comfortable' | 'strong' | 'moe-class';
+
   /**
    * Auto-routes incoming user messages to the most relevant persona(s).
    *   off     — current behaviour, user picks persona manually
@@ -263,6 +270,39 @@ export interface Settings {
   routerPoolSize: number;
   /** One-time explainer modal for first-time router users. */
   routerIntroAcknowledged: boolean;
+}
+
+// ─── hardware probe (v2 — Model Store) ────────────────────────────
+
+export type HardwareTier = 'lightweight' | 'comfortable' | 'strong' | 'moe-class';
+export type GpuVendor = 'nvidia' | 'amd' | 'apple' | 'intel' | 'unknown';
+
+export interface GpuInfo {
+  name: string;
+  vramGb?: number;
+  vendor: GpuVendor;
+}
+
+export interface HardwareInfo {
+  platform: string;
+  arch: string;
+  cpuModel: string;
+  cpuThreads: number;
+  totalRamGb: number;
+  availableRamGb: number;
+  gpu: GpuInfo | null;
+  tier: HardwareTier;
+  detectedAt: number;
+}
+
+export interface ModelRecommendation {
+  ollamaName: string;
+  displayName: string;
+  paramsB: number;
+  contextK: number;
+  approxSizeGb: number;
+  bestFor: string[];
+  warnLargeDownload: boolean;
 }
 
 // ─── screen capture / OCR ──────────────────────────────────────────

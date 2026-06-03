@@ -38,6 +38,7 @@ import { AVAILABLE_LOCALES } from '../lib/i18n';
 import { groupModels, isCloudModel, providerMeta, parseQualified } from '../lib/modelGroups';
 import { CloudModelConsentModal } from './CloudModelConsentModal';
 import { TaskQueuePanel } from './TaskQueuePanel';
+import { ModelStore } from './ModelStore';
 
 interface SettingsViewProps {
   settings: Settings;
@@ -412,6 +413,17 @@ function ModelsTab({ settings, onSave }: { settings: Settings; onSave: (p: Parti
     <div className="settings-form">
       <div className={`status-pill ${reachable ? 'ok' : 'bad'}`}>
         Ollama {reachable ? 'connected' : 'unreachable'} · {installed.length} model(s)
+      </div>
+
+      <div className="field" style={{ background: 'var(--surface-2, rgba(0,0,0,0.04))', padding: 12, borderRadius: 8, marginBottom: 14 }}>
+        <span style={{ fontWeight: 600, marginBottom: 4 }}>Model Store</span>
+        <div className="muted-note" style={{ marginBottom: 8 }}>
+          Picks the right model for your hardware. The smarter the brain, the better PAiA's answers — pick the biggest model your machine handles comfortably.
+        </div>
+        <ModelStore
+          compact
+          onModelSelected={async () => { await refresh(); }}
+        />
       </div>
 
       <div className="field">

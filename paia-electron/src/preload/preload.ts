@@ -46,6 +46,9 @@ import type {
   DbAttachment,
   DbMessage,
   DbThread,
+  HardwareInfo,
+  HardwareTier,
+  ModelRecommendation,
   HotkeyMap,
   KnowledgeCollection,
   KnowledgeDocument,
@@ -168,6 +171,14 @@ const api = {
   }): Promise<string> => ipcRenderer.invoke('paia:map-reduce-start', p),
   mapReduceAbort: (runId: string): Promise<boolean> =>
     ipcRenderer.invoke('paia:map-reduce-abort', runId),
+
+  // ── hardware probe + model recommendations ───────────────
+  hardwareProbe: (force?: boolean): Promise<HardwareInfo> =>
+    ipcRenderer.invoke('paia:hardware-probe', force),
+  hardwareDefaults: (): Promise<{ tier: HardwareTier; recommendations: ModelRecommendation[] }> =>
+    ipcRenderer.invoke('paia:hardware-defaults'),
+  hardwareRecommendations: (tier: HardwareTier): Promise<ModelRecommendation[]> =>
+    ipcRenderer.invoke('paia:hardware-recommendations', tier),
   onMapReduceEvent: (cb: (ev: {
     runId: string;
     threadId: string;

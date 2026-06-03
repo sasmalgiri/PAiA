@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { LocaleId, Settings } from '../../shared/types';
 import { api } from '../lib/api';
 import { AVAILABLE_LOCALES, setLocale, useT } from '../lib/i18n';
+import { ModelStore } from './ModelStore';
 
 interface OnboardingProps {
   settings: Settings;
@@ -271,7 +272,16 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
 
             {ollama && ollama.reachable && (
               <>
-                <p>Pick a starter model. PAiA will pull it into Ollama for you:</p>
+                <p>Pick a model sized for your machine. PAiA detects your hardware and recommends models that'll run comfortably:</p>
+                <ModelStore
+                  onModelSelected={(model) => {
+                    setDraft((d) => ({ ...d, model }));
+                    void refreshOllama();
+                  }}
+                />
+                <details style={{ marginTop: 14 }}>
+                  <summary className="muted-note" style={{ cursor: 'pointer' }}>Or pick a fixed starter preset</summary>
+                  <p style={{ marginTop: 8 }}>Three curated presets (kept for users who prefer fewer options):</p>
                 <div className="onboarding-choices">
                   {PRESETS.map((p) => {
                     const installed = ollama.models.includes(p.id);
@@ -336,6 +346,7 @@ export function Onboarding({ settings, onComplete }: OnboardingProps) {
                     </select>
                   </details>
                 )}
+                </details>
               </>
             )}
 

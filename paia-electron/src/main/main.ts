@@ -33,6 +33,7 @@ import * as personas from './personas';
 import * as personaRouter from './personaRouter';
 import * as council from './council';
 import * as mapReduce from './mapReduce';
+import * as hardware from './hardware';
 import * as screenSvc from './screen';
 import { captureRegion } from './region';
 import * as updater from './updater';
@@ -424,6 +425,12 @@ ipcMain.handle('paia:map-reduce-start', async (event, p: {
   });
 });
 ipcMain.handle('paia:map-reduce-abort', (_e, runId: string) => mapReduce.abortMapReduce(runId));
+
+// ─── hardware probe + model recommendations ──────────────────────
+
+ipcMain.handle('paia:hardware-probe', (_e, force?: boolean) => hardware.probe(force));
+ipcMain.handle('paia:hardware-defaults', () => hardware.defaultsForHardware());
+ipcMain.handle('paia:hardware-recommendations', (_e, tier: hardware.HardwareTier) => hardware.recommendationsFor(tier));
 
 // ─── threads / messages IPC ────────────────────────────────────────
 
