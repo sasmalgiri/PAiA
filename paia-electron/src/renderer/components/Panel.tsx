@@ -363,6 +363,7 @@ export function Panel(props: PanelProps) {
           <button
             type="button"
             className="persona-header-btn"
+            data-tip-anchor="panel-persona-btn"
             title="Switch persona"
             onClick={() => setPersonaPickerOpen(true)}
           >
@@ -403,7 +404,7 @@ export function Panel(props: PanelProps) {
               ))
             )}
           </select>
-          <button type="button" className="icon-btn" title={t('panel.captureFullScreen')} aria-label={t('panel.captureFullScreen')} onClick={() => void doScreenCapture(false)}>📸</button>
+          <button type="button" className="icon-btn" data-tip-anchor="composer-capture-btn" title={t('panel.captureFullScreen')} aria-label={t('panel.captureFullScreen')} onClick={() => void doScreenCapture(false)}>📸</button>
           <button type="button" className="icon-btn" title={t('panel.captureRegion')} aria-label={t('panel.captureRegion')} onClick={() => void doScreenCapture(true)}>✂</button>
           <button type="button" className="icon-btn" title={t('panel.canvas')} aria-label={t('panel.canvas')} onClick={onOpenCanvas}>🎨</button>
           <div className="coll-menu-wrap">
@@ -434,7 +435,7 @@ export function Panel(props: PanelProps) {
             )}
           </div>
           <TrialPill onOpenLicense={onOpenSettings} />
-          <button type="button" className="icon-btn" title={t('panel.settings')} aria-label={t('panel.settings')} onClick={onOpenSettings}>⚙</button>
+          <button type="button" className="icon-btn" data-tip-anchor="panel-settings-btn" title={t('panel.settings')} aria-label={t('panel.settings')} onClick={onOpenSettings}>⚙</button>
           <button type="button" className="icon-btn" title={t('panel.close')} aria-label={t('panel.close')} onClick={onClose}>×</button>
         </div>
       </header>

@@ -271,6 +271,12 @@ export interface Settings {
   /** Qualified cloud model to promote to (e.g. anthropic/claude-sonnet-4-6, openai/gpt-4o). */
   cloudEscalationModel: string;
 
+  // ─── tip cards (E2 — contextual onboarding) ──────────────────
+  /** IDs of tip cards already dismissed — never shown again. */
+  tipsShown: string[];
+  /** User opt-out: hide all tip cards going forward. */
+  tipsDisabled: boolean;
+
   /**
    * Auto-routes incoming user messages to the most relevant persona(s).
    *   off     — current behaviour, user picks persona manually

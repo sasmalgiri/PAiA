@@ -629,7 +629,7 @@ export function Composer({
       />
 
       <div className="composer-buttons">
-        <label className="icon-btn" title={t('composer.attach')}>
+        <label className="icon-btn" data-tip-anchor="composer-attach-btn" title={t('composer.attach')}>
           📎
           <input
             type="file"

@@ -181,6 +181,7 @@ export function SettingsView({ settings, personas, onSave, onBack, onPersonasCha
         <input
           type="search"
           className="settings-search"
+          data-tip-anchor="settings-search-input"
           placeholder="Search settings…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -297,6 +298,19 @@ function GeneralTab({ settings, onSave }: { settings: Settings; onSave: (p: Part
         Launches PAiA hidden in the tray when you log in. On startup PAiA only
         makes network calls for features you've enabled: cloud models, sync,
         analytics, or the update check below.
+      </p>
+      <label className="field row">
+        <span>Show feature tips</span>
+        <input
+          type="checkbox"
+          checked={!settings.tipsDisabled}
+          onChange={(e) => onSave({ tipsDisabled: !e.target.checked })}
+        />
+      </label>
+      <p className="muted-note">
+        Anchored speech-bubble tips that surface the first time a feature becomes
+        relevant (command palette, screen capture, smart router, /longread, settings search).
+        Each tip shows at most once; turn off here to silence the lot.
       </p>
       <label className="field row">
         <span>Allow cloud models (opt-in)</span>

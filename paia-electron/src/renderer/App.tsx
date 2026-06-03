@@ -42,6 +42,8 @@ import { CouncilPanel, type CouncilState } from './components/CouncilPanel';
 import { MapReducePanel, type MapReduceState } from './components/MapReducePanel';
 import { EscalationPrompt } from './components/EscalationPrompt';
 import { isCloudModel } from './lib/modelGroups';
+import { TipCard } from './components/TipCard';
+import { pickNextTip, allTipIds, type TipDefinition } from './lib/tipCards';
 import { InputModal } from './components/InputModal';
 import { setLocale } from './lib/i18n';
 
@@ -93,6 +95,7 @@ export function App() {
     cloudModel: string;
     resolve: (choice: 'this-turn' | 'always' | 'no') => void;
   } | null>(null);
+  const [activeTip, setActiveTip] = useState<TipDefinition | null>(null);
   // Undo-toast for thread soft-delete. Holds the id + name of the
   // just-deleted thread; a timer clears it after 7 seconds.
   const [undoState, setUndoState] = useState<{ id: string; title: string } | null>(null);
@@ -168,6 +171,73 @@ export function App() {
     });
     return off;
   }, []);
+
+  // Tip cards (E2). Pre-populates tipsShown for existing users (so they
+  // don't get nagged) and picks the next tip when context changes.
+  useEffect(() => {
+    if (!settings) return;
+    // Existing users: settings.onboarded is true but tipsShown is empty
+    // → they predate the tip system. Mark every tip as already-shown so
+    // we don't ambush them with notifications about features they use.
+    if (settings.onboarded && settings.tipsShown.length === 0) {
+      void api.saveSettings({ tipsShown: allTipIds() });
+    }
+  }, [settings?.onboarded]);
+
+  // Onboarding telemetry — fires only once per install via the
+  // tipsShown bookkeeping (which doubles as a "have we seen this
+  // milestone?" record). Analytics is itself opt-in upstream so this
+  // is a no-op unless the user enabled it.
+  const milestoneRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!settings || settings.tipsDisabled) return;
+    function fire(name: string, props: Record<string, unknown> = {}): void {
+      if (milestoneRef.current.has(name)) return;
+      milestoneRef.current.add(name);
+      void api.analyticsEvent(name, props);
+    }
+    if (messages.length >= 1) {
+      fire('onboarding:first-message');
+    }
+    if (messages.length >= 5) {
+      fire('onboarding:engaged');
+    }
+  }, [settings?.tipsDisabled, messages.length]);
+
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.tipsDisabled) { setActiveTip(null); return; }
+    // Don't surface tips while a modal/panel is taking over the screen.
+    if (councilState || mapReduceState || agentRun || researchRun || canvasOpen || escalationPrompt) return;
+
+    const ctx = {
+      view: view,
+      messageCount: messages.length,
+      hasAttachment: messages.some((m) => m.attachments.length > 0),
+      personaCount: personas.length,
+    };
+    const next = pickNextTip(ctx, settings.tipsShown);
+    setActiveTip((prev) => (prev?.id === next?.id ? prev : next));
+  }, [
+    settings?.tipsDisabled,
+    settings?.tipsShown,
+    view,
+    messages.length,
+    personas.length,
+    councilState,
+    mapReduceState,
+    agentRun,
+    researchRun,
+    canvasOpen,
+    escalationPrompt,
+  ]);
+
+  const dismissTip = useCallback(async (tipId: string): Promise<void> => {
+    setActiveTip(null);
+    if (!settings) return;
+    if (settings.tipsShown.includes(tipId)) return;
+    await api.saveSettings({ tipsShown: [...settings.tipsShown, tipId] });
+  }, [settings]);
 
   // Council-of-experts event stream. Maintains the modal's state as
   // each expert reports and the synthesis streams.
@@ -315,6 +385,7 @@ export function App() {
         autonomy: settings.agentAutonomy,
         stepBudget: settings.agentStepBudget,
       });
+      void api.analyticsEvent('feature-discovery:agent', { autonomy: settings.agentAutonomy });
       setAgentRun(run);
     } catch (err) {
       const upg = detectUpgradeError(err);
@@ -372,6 +443,7 @@ export function App() {
       answer: '',
       status: 'pending',
     });
+    void api.analyticsEvent('feature-discovery:longread', { docLabel: docLabel.slice(0, 40) });
     try {
       await api.mapReduceStart({
         threadId: thread.id,
@@ -442,6 +514,7 @@ export function App() {
       synthesis: '',
       status: 'pending',
     });
+    void api.analyticsEvent('feature-discovery:council', { experts: personaIds.length });
     try {
       await api.councilStart({
         threadId: thread.id,
@@ -475,6 +548,7 @@ export function App() {
         question,
         model: (threadModel ?? settings.model) || '',
       });
+      void api.analyticsEvent('feature-discovery:research', { depth: settings.researchDepth });
       setResearchRun(run);
     } catch (err) {
       const upg = detectUpgradeError(err);
@@ -974,6 +1048,17 @@ export function App() {
           reason={escalationPrompt.reason}
           cloudModel={escalationPrompt.cloudModel}
           onChoice={(c) => escalationPrompt.resolve(c)}
+        />
+      )}
+
+      {activeTip && (
+        <TipCard
+          tip={activeTip}
+          onDismiss={() => void dismissTip(activeTip.id)}
+          onAction={() => {
+            if (activeTip.action?.kind === 'open-settings') void switchView('settings');
+            else if (activeTip.action?.kind === 'open-palette') setPaletteOpen(true);
+          }}
         />
       )}
 

@@ -86,6 +86,9 @@ const DEFAULTS: Settings = {
 
   cloudEscalation: 'off',
   cloudEscalationModel: '',
+
+  tipsShown: [],
+  tipsDisabled: false,
 };
 
 let cache: Settings | null = null;
