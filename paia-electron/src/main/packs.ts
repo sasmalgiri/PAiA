@@ -168,7 +168,10 @@ export async function install(pack: SignedPack, opts: InstallOptions): Promise<I
   // Gate by required tier — caller can pre-check and surface a nicer
   // upgrade prompt, but this is the defensive enforcement.
   if (m.requiresTier && opts.currentTier) {
-    const order: Record<PackTier, number> = { free: 0, pro: 1, team: 2, legal: 2 };
+    // Tier-ordering for pack-install gating: legal and therapy are
+    // both vertical packs priced at the Pro tier level + curated
+    // content; treat them as peer to team for install permission.
+    const order: Record<PackTier, number> = { free: 0, pro: 1, team: 2, legal: 2, therapy: 2 };
     if (order[opts.currentTier] < order[m.requiresTier]) {
       throw new Error(`This pack requires the ${m.requiresTier} tier; you're on ${opts.currentTier}.`);
     }

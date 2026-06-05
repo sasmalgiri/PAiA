@@ -31,6 +31,7 @@ const MOR_PORTAL_BASE = process.env.PAIA_PORTAL_BASE_URL ?? '';
 const PRODUCT_URLS: Record<Exclude<LicenseTier, 'free'>, string> = {
   pro: process.env.PAIA_CHECKOUT_PRO_URL ?? '',
   legal: process.env.PAIA_CHECKOUT_LEGAL_URL ?? '',
+  therapy: process.env.PAIA_CHECKOUT_THERAPY_URL ?? '',
   team: process.env.PAIA_CHECKOUT_TEAM_URL ?? '',
 };
 

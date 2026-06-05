@@ -1,0 +1,5 @@
+{
+  "name": "Evidence-Based Treatment Protocols (PAiA Therapy)",
+  "description": "Open-licence and clinician-purchasable treatment manuals: CBT, DBT, EMDR, TF-CBT, PCIT, CPT, PE, EFT. Decision trees for protocol selection. Bind to specific modality personas (CBT clinician → CBT manuals; DBT clinician → DBT manuals; etc.).",
+  "embedModel": "nomic-embed-text"
+}

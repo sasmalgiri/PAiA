@@ -1,0 +1,5 @@
+{
+  "name": "ICD-10 / ICD-11 Mental-Health Codes (PAiA Therapy)",
+  "description": "WHO public-domain ICD diagnostic codes for mental and behavioural disorders, with crosswalks to DSM-5-TR where commonly used. Bind to Intake & Assessment + Documentation personas.",
+  "embedModel": "nomic-embed-text"
+}

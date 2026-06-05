@@ -221,7 +221,7 @@ const api = {
   },
 
   // ── commerce (v3-B2) ─────────────────────────────────────
-  checkoutOpen: (target: 'pro' | 'legal' | 'team'): Promise<void> =>
+  checkoutOpen: (target: 'pro' | 'legal' | 'therapy' | 'team'): Promise<void> =>
     ipcRenderer.invoke('paia:checkout-open', target),
   checkoutPortal: (subscriptionId?: string): Promise<void> =>
     ipcRenderer.invoke('paia:checkout-portal', subscriptionId),

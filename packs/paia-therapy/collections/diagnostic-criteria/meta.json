@@ -1,0 +1,5 @@
+{
+  "name": "Diagnostic Criteria (PAiA Therapy)",
+  "description": "DSM-5-TR criteria summaries (paraphrased for clinical reference), differential diagnosis trees, and culturally-informed disambiguators. Bind to Intake & Assessment + Documentation personas.",
+  "embedModel": "nomic-embed-text"
+}

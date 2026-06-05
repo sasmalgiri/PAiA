@@ -17,7 +17,7 @@
 export const PACK_FORMAT_VERSION = 1 as const;
 
 export type PackKind = 'vertical' | 'persona-only' | 'knowledge-only';
-export type PackTier = 'free' | 'pro' | 'team' | 'legal';
+export type PackTier = 'free' | 'pro' | 'team' | 'legal' | 'therapy';
 
 export interface PackManifest {
   id: string;                    // e.g. 'paia-legal', 'paia-eng'

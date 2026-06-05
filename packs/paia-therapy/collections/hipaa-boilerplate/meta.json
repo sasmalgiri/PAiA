@@ -1,0 +1,5 @@
+{
+  "name": "HIPAA + Clinical Practice Boilerplate (PAiA Therapy)",
+  "description": "HIPAA forms (NPP, BAA, ROI), mandated-reporter quick-references, telehealth-consent templates, supervision agreements, scope-of-practice statements. Bind to Documentation Specialist + Intake & Assessment personas.",
+  "embedModel": "nomic-embed-text"
+}

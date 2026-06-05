@@ -19,6 +19,11 @@ const PACK_BANNERS: Record<string, { emoji: string; title: string; body: string 
     title: 'Attorney-client privilege posture',
     body: 'Treat PAiA output as draft work product, not legal advice. Do not paste confidential client information unless your firm has reviewed PAiA\'s data flow (everything is local by default; cloud calls require explicit per-turn consent in this pack).',
   },
+  'paia-therapy': {
+    emoji: '🩺',
+    title: 'HIPAA / clinical confidentiality posture',
+    body: 'Treat PAiA output as draft clinical work product, not clinical advice or decision support. The licensed clinician owns every clinical decision. PHI stays local by default; cloud calls disabled in this pack. If a session involves suicidal ideation, abuse disclosure, or imminent risk, follow your safety-planning protocol — 988 in US, 116 123 in EU.',
+  },
 };
 
 export function PackBanner({ persona }: Props) {

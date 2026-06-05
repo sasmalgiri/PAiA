@@ -504,7 +504,7 @@ ipcMain.handle('paia:packs-uninstall', async (_e, packId: string) => {
 
 // ─── commerce IPC (v3-B2) ────────────────────────────────────────
 
-ipcMain.handle('paia:checkout-open', async (_e, target: 'pro' | 'legal' | 'team') => {
+ipcMain.handle('paia:checkout-open', async (_e, target: 'pro' | 'legal' | 'therapy' | 'team') => {
   await checkout.openCheckout(target);
 });
 ipcMain.handle('paia:checkout-portal', async (_e, subscriptionId?: string) => {

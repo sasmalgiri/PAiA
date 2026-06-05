@@ -1,0 +1,11 @@
+{
+  "id": "paia-therapy",
+  "name": "PAiA Therapy",
+  "version": "0.1.0",
+  "description": "Vertical pack for mental health clinicians: 8 specialist personas (CBT, DBT, EMDR, trauma-focused, family/systems, child & adolescent, intake/assessment, clinical documentation) bound to 4 reference knowledge stacks. HIPAA-aware banner and clinical-confidentiality defaults. NOT a clinical decision support system; outputs are draft work product for licensed clinicians.",
+  "author": { "name": "PAiA", "url": "https://paia.app" },
+  "kind": "vertical",
+  "requiresTier": "therapy",
+  "paiaMinVersion": "2.0.0",
+  "ollamaModels": ["nomic-embed-text"]
+}

@@ -549,7 +549,7 @@ export type QualifiedModel = string;
 
 // ─── licensing ─────────────────────────────────────────────────────
 
-export type LicenseTier = 'free' | 'pro' | 'legal' | 'team';
+export type LicenseTier = 'free' | 'pro' | 'legal' | 'therapy' | 'team';
 
 export interface LicensePayload {
   email: string;

@@ -1915,6 +1915,14 @@ function LicenseTab() {
             <button
               type="button"
               className="small"
+              onClick={() => { void api.checkoutOpen('therapy'); }}
+              title="Includes the PAiA Therapy vertical pack for licensed mental-health clinicians"
+            >
+              Upgrade to Therapy — $49/mo
+            </button>
+            <button
+              type="button"
+              className="small"
               onClick={() => { void api.checkoutOpen('team'); }}
               title="Team tier (min 5 seats), includes classroom + enforcement"
             >

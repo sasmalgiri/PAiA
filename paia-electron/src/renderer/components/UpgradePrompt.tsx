@@ -11,7 +11,7 @@ import { useFocusTrap } from '../lib/focusTrap';
 
 export interface UpgradeInfo {
   feature: string;
-  targetTier: 'pro' | 'legal' | 'team';
+  targetTier: 'pro' | 'legal' | 'therapy' | 'team';
 }
 
 /**
@@ -20,9 +20,9 @@ export interface UpgradeInfo {
  */
 export function detectUpgradeError(err: unknown): UpgradeInfo | null {
   const msg = err instanceof Error ? err.message : String(err ?? '');
-  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Legal|Team)/i);
+  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Legal|Therapy|Team)/i);
   if (!m) return null;
-  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'legal' | 'team' };
+  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'legal' | 'therapy' | 'team' };
 }
 
 interface Props {
@@ -36,7 +36,8 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
   useFocusTrap(containerRef, { onClose });
 
   const tierLabel = info.targetTier === 'team' ? 'Team' :
-                    info.targetTier === 'legal' ? 'Legal' : 'Pro';
+                    info.targetTier === 'legal' ? 'Legal' :
+                    info.targetTier === 'therapy' ? 'Therapy' : 'Pro';
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -78,16 +79,29 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
                 <li>Ambient, autopilot, plugins</li>
               </ul>
             </div>
-            <div className={`upgrade-tier ${info.targetTier === 'legal' ? 'upgrade-tier-featured target' : ''}`}>
-              <div className="upgrade-tier-name">Legal</div>
-              <div className="upgrade-tier-price">$49 <small>/ mo</small></div>
-              <ul>
-                <li>Everything in Pro</li>
-                <li>PAiA Legal vertical pack</li>
-                <li>Patent / corporate / privacy /<br/>compliance / litigation / M&A /<br/>IP licensing / employment personas</li>
-                <li>Privilege-protective defaults</li>
-              </ul>
-            </div>
+            {info.targetTier === 'therapy' ? (
+              <div className="upgrade-tier upgrade-tier-featured target">
+                <div className="upgrade-tier-name">Therapy</div>
+                <div className="upgrade-tier-price">$49 <small>/ mo</small></div>
+                <ul>
+                  <li>Everything in Pro</li>
+                  <li>PAiA Therapy vertical pack</li>
+                  <li>CBT / DBT / EMDR / trauma /<br/>family / child &amp; adolescent /<br/>intake / documentation personas</li>
+                  <li>HIPAA-aware defaults</li>
+                </ul>
+              </div>
+            ) : (
+              <div className={`upgrade-tier ${info.targetTier === 'legal' ? 'upgrade-tier-featured target' : ''}`}>
+                <div className="upgrade-tier-name">Legal</div>
+                <div className="upgrade-tier-price">$49 <small>/ mo</small></div>
+                <ul>
+                  <li>Everything in Pro</li>
+                  <li>PAiA Legal vertical pack</li>
+                  <li>Patent / corporate / privacy /<br/>compliance / litigation / M&amp;A /<br/>IP licensing / employment personas</li>
+                  <li>Privilege-protective defaults</li>
+                </ul>
+              </div>
+            )}
             <div className={`upgrade-tier ${info.targetTier === 'team' ? 'upgrade-tier-featured target' : ''}`}>
               <div className="upgrade-tier-name">Team</div>
               <div className="upgrade-tier-price">$19 <small>/ seat</small></div>
