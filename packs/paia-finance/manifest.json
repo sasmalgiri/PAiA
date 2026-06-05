@@ -1,0 +1,11 @@
+{
+  "id": "paia-finance",
+  "name": "PAiA Finance",
+  "version": "0.1.0",
+  "description": "Vertical pack for fiduciary financial planners, RIAs, and wealth advisors: 8 specialist personas (fiduciary investment advisor, tax-sensitive planner, estate planner, insurance & risk, retirement income, behavioral coach, RIA compliance officer, business-owner exit planner) bound to 4 reference knowledge stacks. FINRA/SEC/state-securities compliance posture; client data stays local by default. NOT a system that gives investment advice — outputs are draft work product for the licensed advisor.",
+  "author": { "name": "PAiA", "url": "https://paia.app" },
+  "kind": "vertical",
+  "requiresTier": "finance",
+  "paiaMinVersion": "2.0.0",
+  "ollamaModels": ["nomic-embed-text"]
+}

@@ -93,6 +93,7 @@ const PACK_CATEGORY: Record<string, string> = {
   'paia-eng': 'Engineering',
   'paia-medical': 'Medical',
   'paia-therapy': 'Medical',
+  'paia-finance': 'Business',
 };
 
 function categoryOf(p: Persona): string {

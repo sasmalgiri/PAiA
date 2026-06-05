@@ -1,0 +1,5 @@
+{
+  "name": "Insurance, Annuities, Retirement Products (PAiA Finance)",
+  "description": "Product taxonomy for life, LTC, disability, annuities; 1035 exchange rules; NAIC model laws; ERISA basics; SS claiming + Medicare; contribution limits + catch-up. Bind to Insurance & Risk Specialist + Retirement Income Specialist personas.",
+  "embedModel": "nomic-embed-text"
+}

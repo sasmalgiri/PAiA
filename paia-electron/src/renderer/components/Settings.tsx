@@ -1923,6 +1923,14 @@ function LicenseTab() {
             <button
               type="button"
               className="small"
+              onClick={() => { void api.checkoutOpen('finance'); }}
+              title="Includes the PAiA Finance vertical pack for fiduciary financial planners, RIAs, and wealth advisors"
+            >
+              Upgrade to Finance — $49/mo
+            </button>
+            <button
+              type="button"
+              className="small"
               onClick={() => { void api.checkoutOpen('team'); }}
               title="Team tier (min 5 seats), includes classroom + enforcement"
             >

@@ -1,0 +1,5 @@
+{
+  "name": "Estate & Wealth Transfer (PAiA Finance)",
+  "description": "Federal estate/gift/GST tax, state estate-tax matrix, trust types and uses, beneficiary planning, POA / healthcare directives. Bind to Estate Planner + Tax-Sensitive Planner + Business-Owner Exit Planner personas.",
+  "embedModel": "nomic-embed-text"
+}

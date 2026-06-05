@@ -24,6 +24,11 @@ const PACK_BANNERS: Record<string, { emoji: string; title: string; body: string 
     title: 'HIPAA / clinical confidentiality posture',
     body: 'Treat PAiA output as draft clinical work product, not clinical advice or decision support. The licensed clinician owns every clinical decision. PHI stays local by default; cloud calls disabled in this pack. If a session involves suicidal ideation, abuse disclosure, or imminent risk, follow your safety-planning protocol — 988 in US, 116 123 in EU.',
   },
+  'paia-finance': {
+    emoji: '📈',
+    title: 'FINRA / SEC compliance posture',
+    body: 'Treat PAiA output as draft work product, not investment, tax, or legal advice. The licensed advisor owns every client recommendation. Client investment data stays local by default; cloud calls disabled in this pack. Your CCO should review PAiA\'s data flow before client-facing use. Securities license scope, fiduciary registration, and state of residence all change what you can recommend.',
+  },
 };
 
 export function PackBanner({ persona }: Props) {

@@ -171,7 +171,7 @@ export async function install(pack: SignedPack, opts: InstallOptions): Promise<I
     // Tier-ordering for pack-install gating: legal and therapy are
     // both vertical packs priced at the Pro tier level + curated
     // content; treat them as peer to team for install permission.
-    const order: Record<PackTier, number> = { free: 0, pro: 1, team: 2, legal: 2, therapy: 2 };
+    const order: Record<PackTier, number> = { free: 0, pro: 1, team: 2, legal: 2, therapy: 2, finance: 2 };
     if (order[opts.currentTier] < order[m.requiresTier]) {
       throw new Error(`This pack requires the ${m.requiresTier} tier; you're on ${opts.currentTier}.`);
     }

@@ -11,7 +11,7 @@ import { useFocusTrap } from '../lib/focusTrap';
 
 export interface UpgradeInfo {
   feature: string;
-  targetTier: 'pro' | 'legal' | 'therapy' | 'team';
+  targetTier: 'pro' | 'legal' | 'therapy' | 'finance' | 'team';
 }
 
 /**
@@ -20,9 +20,9 @@ export interface UpgradeInfo {
  */
 export function detectUpgradeError(err: unknown): UpgradeInfo | null {
   const msg = err instanceof Error ? err.message : String(err ?? '');
-  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Legal|Therapy|Team)/i);
+  const m = msg.match(/Feature "([^"]+)" requires PAiA (Pro|Legal|Therapy|Finance|Team)/i);
   if (!m) return null;
-  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'legal' | 'therapy' | 'team' };
+  return { feature: m[1], targetTier: m[2].toLowerCase() as 'pro' | 'legal' | 'therapy' | 'finance' | 'team' };
 }
 
 interface Props {
@@ -37,7 +37,8 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
 
   const tierLabel = info.targetTier === 'team' ? 'Team' :
                     info.targetTier === 'legal' ? 'Legal' :
-                    info.targetTier === 'therapy' ? 'Therapy' : 'Pro';
+                    info.targetTier === 'therapy' ? 'Therapy' :
+                    info.targetTier === 'finance' ? 'Finance' : 'Pro';
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -88,6 +89,17 @@ export function UpgradePrompt({ info, onClose, onOpenLicense }: Props) {
                   <li>PAiA Therapy vertical pack</li>
                   <li>CBT / DBT / EMDR / trauma /<br/>family / child &amp; adolescent /<br/>intake / documentation personas</li>
                   <li>HIPAA-aware defaults</li>
+                </ul>
+              </div>
+            ) : info.targetTier === 'finance' ? (
+              <div className="upgrade-tier upgrade-tier-featured target">
+                <div className="upgrade-tier-name">Finance</div>
+                <div className="upgrade-tier-price">$49 <small>/ mo</small></div>
+                <ul>
+                  <li>Everything in Pro</li>
+                  <li>PAiA Finance vertical pack</li>
+                  <li>Fiduciary advisor / tax /<br/>estate / insurance / retirement /<br/>behavioural / RIA compliance /<br/>exit-planning personas</li>
+                  <li>FINRA/SEC-aware defaults</li>
                 </ul>
               </div>
             ) : (

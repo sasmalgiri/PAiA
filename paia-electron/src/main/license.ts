@@ -276,6 +276,9 @@ const LEGAL_FEATURES: FeatureFlag[] = [
 const THERAPY_FEATURES: FeatureFlag[] = [
   ...PRO_FEATURES,
 ];
+const FINANCE_FEATURES: FeatureFlag[] = [
+  ...PRO_FEATURES,
+];
 const TEAM_FEATURES: FeatureFlag[] = [
   ...PRO_FEATURES,
   'classroom',
@@ -287,6 +290,7 @@ export function isFeatureEnabled(feature: FeatureFlag): boolean {
   if (tier === 'team') return TEAM_FEATURES.includes(feature);
   if (tier === 'legal') return LEGAL_FEATURES.includes(feature);
   if (tier === 'therapy') return THERAPY_FEATURES.includes(feature);
+  if (tier === 'finance') return FINANCE_FEATURES.includes(feature);
   if (tier === 'pro') return PRO_FEATURES.includes(feature);
   return FREE_FEATURES.includes(feature);
 }

@@ -1,0 +1,5 @@
+{
+  "name": "SEC / FINRA Rules & RIA Compliance (PAiA Finance)",
+  "description": "Investment Advisers Act, SEC rules, FINRA conduct rules, Form ADV references, state RIA registration thresholds, NASAA model rules. Bind to RIA Compliance Officer + Fiduciary Investment Advisor personas.",
+  "embedModel": "nomic-embed-text"
+}

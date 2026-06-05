@@ -1,0 +1,5 @@
+{
+  "name": "Tax Code & IRS Guidance (PAiA Finance)",
+  "description": "Selected IRC sections, IRS Publications, Revenue Procedures, Form instructions, SECURE 2.0 summary. US Government public-domain. Bind to Tax-Sensitive Planner + Estate Planner + Retirement Income personas.",
+  "embedModel": "nomic-embed-text"
+}
